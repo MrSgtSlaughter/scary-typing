@@ -345,16 +345,21 @@ select option { background:#1a0505; }
 }
 .passage-display {
   font-family:'Special Elite',serif;
-  font-size:clamp(16px,2.5vw,22px);
-  line-height:1.8;
+  font-size:clamp(14px,1.8vw,18px);
+  line-height:1.9;
   margin-bottom:16px;
   padding:16px;
   background:rgba(139,0,0,0.05);
   border:1px solid rgba(139,0,0,0.2);
   border-radius:2px;
   min-height:80px;
+  max-height:220px;
+  overflow-y:auto;
+  word-wrap:break-word;
+  overflow-wrap:break-word;
+  white-space:pre-wrap;
 }
-.char { display:inline; }
+.char { display:inline; white-space:pre-wrap; }
 .char.correct { color:#4caf50; }
 .char.wrong { color:#ff3333; background:rgba(255,0,0,0.15); text-decoration:underline; }
 .char.current { background:rgba(204,0,0,0.4); border-bottom:2px solid var(--red); animation:blink 0.6s infinite; }
@@ -1214,9 +1219,13 @@ function renderPassage() {
     let cls = 'untyped';
     if(i < state.charIndex) cls = 'correct';
     if(i === state.charIndex) cls = 'current';
-    const escaped = ch === ' ' ? '&nbsp;' : ch.replace(/</g,'&lt;');
+    // Keep spaces as spaces so text wraps naturally; use pre-wrap on container
+    const escaped = ch.replace(/&/g,'&amp;').replace(/</g,'&lt;');
     return `<span class="char ${cls}">${escaped}</span>`;
   }).join('');
+  // Auto-scroll current char into view
+  const cur = display.querySelector('.current');
+  if(cur) cur.scrollIntoView({block:'nearest', behavior:'smooth'});
 }
 
 // ═══════════════════════════════════════════
@@ -1423,7 +1432,6 @@ async function endRound(room, players) {
 // CUTSCENE SYSTEM
 // ═══════════════════════════════════════════
 function playCutscene(type, onDone) {
-  // type: 'won' | 'lose'
   const overlay = document.getElementById('cutsceneOverlay');
   const video = document.getElementById('cutsceneVideo');
   const msg = document.getElementById('cutsceneMsg');
@@ -1431,28 +1439,38 @@ function playCutscene(type, onDone) {
 
   overlay.style.display = 'flex';
   video.src = type === 'won' ? 'won.mp4' : 'lose.mp4';
-  video.loop = (type === 'lose'); // lose loops; won plays once then continues
+  video.muted = false;
 
   if(type === 'won') {
     msg.textContent = 'YOU SURVIVED...';
-    sub.textContent = 'FOR NOW';
+    sub.textContent = '👁️ TAP TO CONTINUE';
     video.loop = false;
-    video.onended = () => {
+    // Either video ends OR player taps to skip
+    const proceed = () => {
       overlay.style.display = 'none';
+      video.pause();
       video.src = '';
+      video.onended = null;
+      overlay.removeEventListener('click', proceed);
       if(onDone) onDone();
     };
+    video.onended = proceed;
+    overlay.addEventListener('click', proceed, {once: true});
   } else {
     msg.textContent = 'DANIELLE HAS CLAIMED YOU';
-    sub.textContent = 'YOU HAVE BEEN DOLLIFIED — WATCH AND SUFFER';
+    sub.textContent = '🪆 YOU HAVE BEEN DOLLIFIED';
     video.loop = true;
-    // No onDone for lose — loops until game ends
+    video.onended = null;
   }
 
-  video.play().catch(()=>{ 
-    // Autoplay blocked — skip cutscene
-    overlay.style.display = 'none';
-    if(onDone) onDone();
+  // Try unmuted first, fall back to muted (Chromebook autoplay policy)
+  video.play().catch(() => {
+    video.muted = true;
+    video.play().catch(() => {
+      // Autoplay fully blocked — skip
+      overlay.style.display = 'none';
+      if(onDone) onDone();
+    });
   });
 }
 
@@ -1461,6 +1479,7 @@ function stopCutscene() {
   const video = document.getElementById('cutsceneVideo');
   overlay.style.display = 'none';
   video.pause();
+  video.onended = null;
   video.src = '';
 }
 
