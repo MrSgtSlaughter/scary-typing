@@ -734,6 +734,13 @@ select option { background:#1a0505; }
   <div class="rb-next">Get ready to type...</div>
 </div>
 
+<!-- Cutscene Overlay -->
+<div id="cutsceneOverlay" style="display:none;position:fixed;inset:0;z-index:500;background:#000;flex-direction:column;align-items:center;justify-content:center;">
+  <video id="cutsceneVideo" style="max-width:90vw;max-height:80vh;border:2px solid var(--blood);box-shadow:0 0 40px rgba(139,0,0,0.6);" playsinline></video>
+  <div id="cutsceneMsg" style="font-family:Creepster,cursive;font-size:28px;color:var(--red);text-shadow:var(--glow-red);margin-top:16px;text-align:center;"></div>
+  <div id="cutsceneSubMsg" style="font-family:VT323,monospace;font-size:18px;color:#aa6666;letter-spacing:3px;margin-top:6px;text-align:center;"></div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -891,32 +898,29 @@ async function fbDelete(path) {
 // ═══════════════════════════════════════════
 const PASSAGES = {
   classic: [
-    "The door creaked open slowly, revealing a darkness that seemed to breathe. She took one step inside and heard the lock click behind her.",
-    "He found the old photograph in the attic. Everyone in it was smiling. Everyone except the figure standing in the corner that he had never seen before.",
-    "The children had been playing in the backyard all afternoon. When she called them in for dinner, she realized she had no children.",
-    "They said the house had been empty for thirty years. The fresh footprints in the dust leading up the staircase suggested otherwise.",
-    "She woke up at exactly three in the morning every night for a week. On the eighth night, something finally woke up with her.",
-    "The babysitter called the parents to ask if she could cover the clown statue in the corner. They told her to take the children and leave the house immediately.",
-    "I always lock my bedroom door before I sleep. This morning I woke up and the door was open. My slippers were on the wrong feet.",
-    "The hospital was quiet except for the soft beeping of machines. Visiting hours had ended hours ago. So who was humming in room four thirteen.",
-    "She left a bowl of milk on the porch every night for the stray cat. One morning she found the milk gone and two small handprints in the mud beside the bowl.",
-    "The old lighthouse had been closed for fifty years. The beam still swept the coast every night at midnight without fail.",
+    "The door at the end of the hallway had been painted shut for thirty years. Nobody remembered who had done it or why. When Marcus finally pried it open with a crowbar, cold air rushed out carrying a smell of lavender and something else underneath it that he could not name. Inside was a child's bedroom. The bed was made. The toys were arranged neatly on the shelves. On the desk was a homework assignment dated the same month Marcus was born. The pencil was still rolling slowly toward the edge as though someone had just set it down.",
+
+    "The night shift nurse made her rounds at exactly two in the morning. She checked each room quietly and noted the readings on her clipboard. Room four twelve, stable. Room four thirteen, stable. Room four fourteen, empty as always. But when she returned to the nurses station and reviewed her notes, she found she had written observations for room four fourteen too. Vital signs. A name. A description of a patient sleeping peacefully. She had no memory of writing any of it. The handwriting was not hers.",
+
+    "He moved into the old farmhouse in October because the rent was impossibly cheap. The landlord had been very clear about one rule. Do not go into the basement after dark. He had laughed at that. He was a grown man and it was his house now. On his third night there he heard something dragging itself slowly across the basement floor directly beneath his bedroom. He lay perfectly still and listened. Whatever it was, it was counting his footsteps from earlier in the day. It had the number exactly right.",
+
+    "The photograph had been in her family for generations. Six people standing in front of a farmhouse. Her great grandmother in the center. Four relatives she recognized from other photos. And a seventh figure standing just at the edge of the frame that nobody in the family could ever identify. Her grandmother refused to discuss it. Her mother pretended not to see it. When her own daughter pointed at the photograph one afternoon and asked who the tall one at the edge was, she felt the room get very cold. The figure was closer to the center than it had been before.",
+
+    "The babysitter put the children to bed at eight and settled onto the couch with her phone. The house was quiet. Around ten she heard giggling from upstairs. She went up and found both children awake and staring at the window. She told them to go back to sleep. An hour later the giggling started again. This time when she went upstairs both children were already asleep. She stood in the doorway trying to figure out where the sound was coming from. Then she realized it was coming from inside the walls.",
   ],
   spooky: [
-    "The hallway stretched on forever in both directions. Every door was identical. Every door was locked. Every door was breathing.",
-    "Danielle walked the school halls at night dragging her fingernails along the lockers. She was looking for someone who had not finished their homework.",
-    "The typing test began at nine o clock sharp. By nine fifteen three students had simply vanished from their chairs leaving only their keyboards still clicking.",
-    "Room two fourteen smelled like lavender and rust. The substitute teacher did not notice that her reflection in the window was not following her movements.",
-    "The fire drill alarm echoed through the building. All one hundred and thirty students lined up outside. When they returned inside there were one hundred and thirty one.",
-    "She found a note in her locker that said she had been chosen. There was no name on the note. There was no lock on the locker.",
-    "The school library closed at four every afternoon. At four fifteen the librarian returned for her forgotten keys and found every chair occupied by someone reading.",
-    "The gymnasium lights flickered twice before going out completely. When the emergency lighting came on Coach Barnes was standing perfectly still facing the wall.",
-    "The old computer in the back row of the lab had not been plugged in for three years. It turned on every day at two forty seven and displayed one name.",
-    "She stayed after class to finish her test. When she looked up the room was empty and dark. She did not remember the windows having bars on them this morning.",
+    "The hallway of Pioneer Middle School stretched longer than it had any right to. Lockers lined both sides going on and on into a darkness that the overhead lights could not seem to reach. Every locker was closed. Every floor tile was exactly the same. There were no windows. There were no doors leading out. There was only the sound of her own footsteps echoing back at twice the speed she was walking. At the far end of the hallway, just at the edge of the darkness, something that looked almost exactly like her homeroom teacher was standing completely still and facing the wall.",
+
+    "The typing test had started at nine o clock sharp. Twenty five students sat at their keyboards and began. The passage was the same for everyone. The room was quiet except for the clicking of keys. At nine fourteen the student in the third row stopped typing and simply sat there with her hands in her lap. Nobody noticed. At nine seventeen two more stopped. By nine twenty two the room was completely silent. When Mr. Slaughter looked up from his desk every screen in the room showed one hundred percent completion and every student was sitting with perfect posture staring straight ahead and smiling.",
+
+    "Danielle had been at Pioneer Middle School longer than any of the teachers. Longer than the building itself according to some students who said such things in whispers. She looked like a seventh grader. She had always looked like a seventh grader. She sat in the back of every class and never raised her hand and never got anything wrong. If you stayed after class alone she would come stand in the doorway. She would watch you pack your bag. She would tilt her head very slowly to one side. And she would say your full name in a voice that was just slightly too deep to be a child's.",
+
+    "The computer lab on the second floor was always cold. Students complained about it every year and every year facilities management said they would look into it. The cold came from computer station seven in the back corner. That computer had not been assigned to any student in three years after what happened. The screen still turned on by itself every day at two forty seven in the afternoon. It displayed a blank document with a cursor blinking at the top. If you watched it long enough the cursor would begin to move. Whatever it was typing, it always stopped the moment anyone got close enough to read it.",
+
+    "The fire drill happened at eleven fifteen on a Tuesday. All one hundred and thirty two students filed out of the building in an orderly fashion and stood on the front lawn while the teachers took attendance. Everyone was present. The drill lasted four minutes. When the all clear sounded the students filed back inside and returned to their classrooms. Fourth period continued without incident. It was not until the end of the day when the office was printing dismissal slips that someone noticed the attendance records showed one hundred and thirty three students had returned to the building. Nobody could explain the difference. Nobody wanted to.",
   ],
   random: []
 };
-// Merge for random
 PASSAGES.random = [...PASSAGES.classic, ...PASSAGES.spooky].sort(()=>Math.random()-0.5);
 
 // ═══════════════════════════════════════════
@@ -941,6 +945,7 @@ let state = {
   passageSet: 'classic',
   passageIndex: 0,
   finished: false,
+  endingRound: false,
 };
 
 // ═══════════════════════════════════════════
@@ -1085,40 +1090,62 @@ function startLobbyPoll() {
 // TEACHER: START ROUND
 // ═══════════════════════════════════════════
 async function teacherStart() {
+  document.getElementById('teacherStartBtn').disabled = true;
+  document.getElementById('teacherStartBtn').textContent = '⏳ Starting...';
+
   const room = await fbGet(`rooms/${state.roomCode}`);
-  if(!room) return;
+  if(!room) { toast('❌ Could not reach Firebase'); document.getElementById('teacherStartBtn').disabled=false; return; }
+
   const players = room.players || {};
   const alive = Object.values(players).filter(p=>!p.eliminated);
-  if(alive.length < 2) { toast('Need at least 2 players!'); return; }
+  if(alive.length < 2) {
+    toast('Need at least 2 players!');
+    document.getElementById('teacherStartBtn').disabled = false;
+    document.getElementById('teacherStartBtn').textContent = '▶ START ROUND';
+    return;
+  }
 
   const pSet = PASSAGES[room.passageSet] || PASSAGES.classic;
   const idx = (room.passageIndex || 0) % pSet.length;
   const passage = pSet[idx];
+  const startTime = Date.now() + 4000;
 
-  // Reset progress for alive players
-  const updates = {};
-  Object.keys(players).forEach(k=>{
-    if(!players[k].eliminated) {
-      updates[`rooms/${state.roomCode}/players/${k}/progress`] = 0;
-      updates[`rooms/${state.roomCode}/players/${k}/wpm`] = 0;
-      updates[`rooms/${state.roomCode}/players/${k}/finished`] = false;
+  // Reset each alive player individually using targeted fbUpdate
+  for(const k of Object.keys(players)){
+    if(!players[k].eliminated){
+      await fbUpdate(`rooms/${state.roomCode}/players/${k}`, {
+        progress: 0, wpm: 0, finished: false
+      });
     }
+  }
+
+  // Update room fields individually
+  await fbUpdate(`rooms/${state.roomCode}`, {
+    status: 'playing',
+    currentPassage: passage,
+    passageIndex: idx + 1,
+    roundStartTime: startTime,
+    round: room.round || 1
   });
 
-  await fetch(`${FB_URL}.json`, {
-    method:'PATCH',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      ...updates,
-      [`rooms/${state.roomCode}/status`]: 'playing',
-      [`rooms/${state.roomCode}/currentPassage`]: passage,
-      [`rooms/${state.roomCode}/passageIndex`]: idx + 1,
-      [`rooms/${state.roomCode}/roundStartTime`]: Date.now() + 3500,
-    })
-  });
-
-  document.getElementById('teacherStartBtn').disabled = true;
   document.getElementById('teacherStartBtn').textContent = '⏳ Round Running...';
+
+  // Teacher enters game screen as observer
+  state.passage = passage;
+  state.round = room.round || 1;
+  state.charIndex = 0;
+  state.errors = 0;
+  state.startTime = null;
+  state.finished = false;
+  clearInterval(state.pollInterval);
+  document.getElementById('roundNum').textContent = state.round;
+  renderPassage();
+  showScreen('screen-game');
+  const delay = startTime - Date.now();
+  await showRoundBanner(state.round, delay);
+  document.getElementById('typingInput').disabled = true;
+  document.getElementById('typingInput').placeholder = '👁️ Teacher view — watching students...';
+  startGamePoll();
 }
 
 async function teacherEndGame() {
@@ -1274,12 +1301,35 @@ function startGamePoll() {
     if(room.status === 'ended') {
       clearInterval(state.pollInterval);
       showResults(players);
+      return;
     }
 
+    // New round started by teacher
     if(room.status === 'playing' && room.round > state.round) {
       clearInterval(state.pollInterval);
       state.round = room.round;
       startGameRound(room);
+      return;
+    }
+
+    // Round ended - go back to lobby screen to wait for next round
+    if(room.status === 'lobby' && room.round > state.round && !state.isTeacher) {
+      clearInterval(state.pollInterval);
+      const prevRound = state.round;
+      state.round = room.round;
+      if(!state.isEliminated) {
+        // Survived — play won cutscene then go to lobby
+        playCutscene('won', () => {
+          showScreen('screen-lobby');
+          document.getElementById('waitingMsg').textContent = `☠️ Round ${prevRound} ended. Waiting for next round...`;
+          startLobbyPoll();
+        });
+      } else {
+        showScreen('screen-lobby');
+        document.getElementById('waitingMsg').textContent = `☠️ Round ${prevRound} ended. Waiting for next round...`;
+        startLobbyPoll();
+      }
+      return;
     }
 
   }, 800);
@@ -1335,35 +1385,83 @@ function updateGraveyard(dolls) {
 // END ROUND — ELIMINATE BOTTOM 3
 // ═══════════════════════════════════════════
 async function endRound(room, players) {
+  // Guard: only run once per round
+  if(state.endingRound) return;
+  state.endingRound = true;
+
   const alive = Object.entries(players).filter(([,p])=>!p.eliminated)
     .sort(([,a],[,b])=> (a.wpm||0) - (b.wpm||0)); // ascending = worst first
 
-  const toElim = alive.slice(0, Math.min(3, alive.length-1)); // never elim last 1
+  const toElim = alive.slice(0, Math.min(3, alive.length - 1)); // never elim the last survivor
   if(toElim.length === 0) {
-    // Game over — 1 survivor
     await fbUpdate(`rooms/${state.roomCode}`, { status:'ended' });
+    state.endingRound = false;
     return;
   }
 
-  const updates = {};
-  toElim.forEach(([k,p])=>{
-    updates[`rooms/${state.roomCode}/players/${k}/eliminated`] = true;
-    updates[`rooms/${state.roomCode}/dolls/${k}`] = { name: p.name, period: p.period, round: room.round };
-  });
+  // Eliminate bottom players individually
+  for(const [k,p] of toElim){
+    await fbUpdate(`rooms/${state.roomCode}/players/${k}`, { eliminated: true });
+    await fbUpdate(`rooms/${state.roomCode}/dolls/${k}`, { name: p.name, period: p.period, round: room.round });
+  }
 
   const nextRound = (room.round||1) + 1;
-  updates[`rooms/${state.roomCode}/round`] = nextRound;
-  updates[`rooms/${state.roomCode}/status`] = 'lobby';
+  await fbUpdate(`rooms/${state.roomCode}`, { round: nextRound, status: 'lobby' });
 
-  await fetch(`${FB_URL}.json`, {
-    method:'PATCH',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(updates)
-  });
-
+  state.endingRound = false;
   document.getElementById('teacherStartBtn').disabled = false;
   document.getElementById('teacherStartBtn').textContent = `▶ START ROUND ${nextRound}`;
-  toast(`Round ${room.round} over! ${toElim.length} eliminated.`);
+  toast(`Round ${room.round} over! ${toElim.length} dollified.`);
+
+  // Teacher goes back to lobby view
+  clearInterval(state.pollInterval);
+  showScreen('screen-lobby');
+  startLobbyPoll();
+}
+
+// ═══════════════════════════════════════════
+// CUTSCENE SYSTEM
+// ═══════════════════════════════════════════
+function playCutscene(type, onDone) {
+  // type: 'won' | 'lose'
+  const overlay = document.getElementById('cutsceneOverlay');
+  const video = document.getElementById('cutsceneVideo');
+  const msg = document.getElementById('cutsceneMsg');
+  const sub = document.getElementById('cutsceneSubMsg');
+
+  overlay.style.display = 'flex';
+  video.src = type === 'won' ? 'won.mp4' : 'lose.mp4';
+  video.loop = (type === 'lose'); // lose loops; won plays once then continues
+
+  if(type === 'won') {
+    msg.textContent = 'YOU SURVIVED...';
+    sub.textContent = 'FOR NOW';
+    video.loop = false;
+    video.onended = () => {
+      overlay.style.display = 'none';
+      video.src = '';
+      if(onDone) onDone();
+    };
+  } else {
+    msg.textContent = 'DANIELLE HAS CLAIMED YOU';
+    sub.textContent = 'YOU HAVE BEEN DOLLIFIED — WATCH AND SUFFER';
+    video.loop = true;
+    // No onDone for lose — loops until game ends
+  }
+
+  video.play().catch(()=>{ 
+    // Autoplay blocked — skip cutscene
+    overlay.style.display = 'none';
+    if(onDone) onDone();
+  });
+}
+
+function stopCutscene() {
+  const overlay = document.getElementById('cutsceneOverlay');
+  const video = document.getElementById('cutsceneVideo');
+  overlay.style.display = 'none';
+  video.pause();
+  video.src = '';
 }
 
 // ═══════════════════════════════════════════
@@ -1376,8 +1474,10 @@ function showElimScreen() {
     const el = document.getElementById(id);
     if(el) el.style.opacity='1';
   });
-  document.getElementById('elimTitle').textContent = `${state.playerName.toUpperCase()}, YOU'VE BEEN DOLLIFIED`;
+  document.getElementById('elimTitle').textContent = `${state.playerName ? state.playerName.toUpperCase() : 'YOU'}, YOU'VE BEEN DOLLIFIED`;
   document.getElementById('elimOverlay').classList.add('show');
+  // Play lose.mp4 on loop — plays until game ends
+  playCutscene('lose', null);
 }
 function closeElim() {
   document.getElementById('elimOverlay').classList.remove('show');
@@ -1388,6 +1488,7 @@ function closeElim() {
 // ═══════════════════════════════════════════
 async function showResults(players) {
   clearInterval(state.pollInterval);
+  stopCutscene(); // Stop any looping lose video
 
   // Save to Firebase leaderboard
   const myPlayer = players[state.playerId];
