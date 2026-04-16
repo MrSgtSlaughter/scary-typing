@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TYPING TERROR 👁️</title>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blood: #8b0000;
+  --red: #cc0000;
+  --dim: #1a0a0a;
+  --dark: #0d0505;
+  --fog: #2a1515;
+  --gold: #c9a84c;
+  --pale: #e8d5b0;
+  --ghost: rgba(232,213,176,0.08);
+  --glow-red: 0 0 8px #cc0000, 0 0 20px #8b000088;
+  --glow-gold: 0 0 8px #c9a84c, 0 0 20px #c9a84c44;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--dark);
+  font-family: 'Special Elite', serif;
+  color: var(--pale);
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: crosshair;
+}
+
+/* ═══════════════════════════════
+   HALLWAY BACKGROUND
+═══════════════════════════════ */
+.hallway-bg {
+  position: fixed; inset:0; z-index:0;
+  background:
+    /* Floor perspective lines */
+    linear-gradient(180deg, #0d0505 0%, #1a0808 40%, #0f0303 100%);
+  overflow: hidden;
+}
+.hallway-bg::before {
+  content:'';
+  position:absolute; inset:0;
+  background:
+    /* Ceiling */
+    linear-gradient(180deg, #0a0202 0%, transparent 15%),
+    /* Floor */
+    linear-gradient(0deg, #0a0202 0%, transparent 15%);
+}
+/* Perspective walls SVG drawn via JS canvas */
+#hallwayCanvas {
+  position:fixed; inset:0; z-index:0; opacity:0.85;
+  pointer-events:none;
+}
+
+/* ═══════════════════════════════
+   SCREENS
+═══════════════════════════════ */
+.screen {
+  display:none; position:relative; z-index:10;
+  min-height:100vh; padding:20px;
+  flex-direction:column; align-items:center; justify-content:center;
+}
+.screen.active { display:flex; }
+
+/* ═══════════════════════════════
+   TITLE SCREEN
+═══════════════════════════════ */
+#screen-title {
+  text-align:center;
+  gap:24px;
+}
+
+.title-logo {
+  font-family:'Creepster', cursive;
+  font-size: clamp(48px, 10vw, 100px);
+  color: var(--red);
+  text-shadow: var(--glow-red), 4px 4px 0 #000;
+  letter-spacing: 8px;
+  animation: flicker 4s infinite;
+  line-height:1;
+}
+.title-sub {
+  font-family:'VT323', monospace;
+  font-size:22px;
+  color: #aa6666;
+  letter-spacing:6px;
+  text-transform:uppercase;
+}
+.eye-deco { font-size:40px; animation: eyeSpin 6s infinite; display:inline-block; }
+
+@keyframes flicker {
+  0%,19%,21%,23%,25%,54%,56%,100% { opacity:1; text-shadow: var(--glow-red), 4px 4px 0 #000; }
+  20%,22%,24%,55% { opacity:0.4; text-shadow:none; }
+}
+@keyframes eyeSpin {
+  0%,100%{ transform:scaleX(1); }
+  50%{ transform:scaleX(-1); }
+}
+
+.card {
+  background: linear-gradient(135deg, rgba(30,5,5,0.95), rgba(15,0,0,0.98));
+  border: 1px solid var(--blood);
+  border-radius: 4px;
+  padding: 32px 40px;
+  box-shadow: 0 0 30px rgba(139,0,0,0.3), inset 0 0 20px rgba(0,0,0,0.5);
+  max-width: 480px;
+  width: 100%;
+}
+.card h2 {
+  font-family:'Creepster', cursive;
+  color: var(--gold);
+  font-size:28px;
+  text-align:center;
+  margin-bottom:20px;
+  text-shadow: var(--glow-gold);
+}
+
+.field-label {
+  font-family:'VT323',monospace;
+  font-size:16px;
+  color:#aa6666;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+input[type=text], input[type=password], select {
+  width:100%;
+  background: rgba(0,0,0,0.7);
+  border: 1px solid var(--blood);
+  border-radius:2px;
+  color: var(--pale);
+  font-family:'Special Elite',serif;
+  font-size:18px;
+  padding:10px 14px;
+  margin-bottom:16px;
+  outline:none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus, select:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 8px rgba(204,0,0,0.4);
+}
+select option { background:#1a0505; }
+
+.btn {
+  display:block;
+  width:100%;
+  padding:14px;
+  font-family:'Creepster',cursive;
+  font-size:24px;
+  letter-spacing:3px;
+  border:none;
+  border-radius:2px;
+  cursor:pointer;
+  transition: all 0.2s;
+  text-transform:uppercase;
+  margin-top:4px;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--blood), #5a0000);
+  color: var(--pale);
+  box-shadow: 0 4px 15px rgba(139,0,0,0.4);
+}
+.btn-primary:hover { background: linear-gradient(135deg, var(--red), var(--blood)); transform:translateY(-2px); box-shadow:0 6px 20px rgba(204,0,0,0.5); }
+.btn-secondary {
+  background: transparent;
+  color: #aa6666;
+  border:1px solid #5a2020;
+  margin-top:10px;
+  font-size:18px;
+}
+.btn-secondary:hover { color:var(--pale); border-color:var(--blood); }
+
+.divider {
+  text-align:center;
+  color:#5a2020;
+  font-family:'VT323',monospace;
+  letter-spacing:4px;
+  margin:10px 0;
+}
+
+/* ═══════════════════════════════
+   LOBBY
+═══════════════════════════════ */
+#screen-lobby { gap:20px; align-items:stretch; max-width:900px; margin:0 auto; }
+
+.room-code-display {
+  background: rgba(0,0,0,0.8);
+  border: 2px solid var(--gold);
+  border-radius:4px;
+  padding:20px 32px;
+  text-align:center;
+  box-shadow: var(--glow-gold);
+}
+.room-code-display .label { font-family:'VT323',monospace; font-size:14px; letter-spacing:5px; color:#aa8844; }
+.room-code-display .code { font-family:'Creepster',cursive; font-size:56px; color:var(--gold); letter-spacing:10px; text-shadow:var(--glow-gold); }
+
+.lobby-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:600px){ .lobby-grid{ grid-template-columns:1fr; } }
+
+.player-roster {
+  background:rgba(0,0,0,0.7);
+  border:1px solid var(--blood);
+  border-radius:4px;
+  padding:16px;
+  min-height:300px;
+}
+.player-roster h3 { font-family:'Creepster',cursive; color:var(--red); font-size:22px; margin-bottom:12px; }
+.player-item {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 10px; margin-bottom:6px;
+  background:rgba(139,0,0,0.1);
+  border:1px solid rgba(139,0,0,0.3);
+  border-radius:2px;
+  animation: slideIn 0.3s ease;
+}
+@keyframes slideIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:none} }
+.player-avatar { font-size:22px; }
+.player-name { font-size:16px; flex:1; }
+.player-period { font-family:'VT323',monospace; font-size:14px; color:#aa6666; }
+
+.lobby-info {
+  background:rgba(0,0,0,0.7);
+  border:1px solid rgba(139,0,0,0.3);
+  border-radius:4px;
+  padding:16px;
+}
+.lobby-info h3 { font-family:'Creepster',cursive; color:var(--gold); font-size:22px; margin-bottom:12px; }
+.info-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(139,0,0,0.2); font-size:15px; }
+.info-val { color:var(--gold); font-family:'VT323',monospace; font-size:18px; }
+
+.waiting-msg {
+  font-family:'VT323',monospace;
+  font-size:20px;
+  color:#aa6666;
+  text-align:center;
+  padding:20px;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+
+/* ═══════════════════════════════
+   GAME SCREEN
+═══════════════════════════════ */
+#screen-game {
+  align-items:stretch;
+  max-width:1100px;
+  margin:0 auto;
+  gap:14px;
+  padding-top:14px;
+  padding-bottom:14px;
+}
+
+.game-header {
+  display:flex; justify-content:space-between; align-items:center;
+  background:rgba(0,0,0,0.8);
+  border:1px solid var(--blood);
+  border-radius:4px;
+  padding:10px 20px;
+}
+.round-badge {
+  font-family:'Creepster',cursive;
+  font-size:22px;
+  color:var(--red);
+}
+.round-info { font-family:'VT323',monospace; font-size:16px; color:#aa6666; }
+
+/* Hallway player track */
+.hallway-track {
+  background:rgba(0,0,0,0.85);
+  border:1px solid var(--blood);
+  border-radius:4px;
+  padding:14px;
+  position:relative;
+  overflow:hidden;
+  min-height:120px;
+}
+.hallway-track::before {
+  content:'';
+  position:absolute; inset:0;
+  background: linear-gradient(90deg,
+    rgba(139,0,0,0.05) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(139,0,0,0.05) 100%
+  );
+}
+.track-label { font-family:'VT323',monospace; font-size:13px; letter-spacing:3px; color:#5a2020; margin-bottom:8px; }
+
+.runner-row {
+  display:flex; align-items:center; gap:8px;
+  padding:5px 8px; margin-bottom:4px;
+  border-radius:2px;
+  transition: background 0.3s;
+  position:relative;
+}
+.runner-row.is-me { background:rgba(139,0,0,0.15); border:1px solid rgba(139,0,0,0.4); }
+.runner-row.eliminated { opacity:0.5; }
+
+.runner-name {
+  width:120px; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.runner-track {
+  flex:1;
+  height:18px;
+  background:rgba(0,0,0,0.5);
+  border:1px solid rgba(139,0,0,0.3);
+  border-radius:2px;
+  overflow:hidden;
+  position:relative;
+}
+.runner-fill {
+  height:100%;
+  background: linear-gradient(90deg, var(--blood), var(--red));
+  transition: width 0.2s ease;
+  position:relative;
+}
+.runner-fill::after {
+  content:'';
+  position:absolute; right:0; top:0; bottom:0; width:3px;
+  background:#ff4444;
+  box-shadow: 0 0 6px #ff4444;
+}
+.runner-wpm {
+  width:55px; text-align:right;
+  font-family:'VT323',monospace; font-size:17px; color:var(--gold);
+}
+.runner-emoji { font-size:18px; width:26px; text-align:center; }
+.bottom-badge {
+  position:absolute; right:6px; top:50%; transform:translateY(-50%);
+  font-family:'VT323',monospace; font-size:11px; color:var(--red);
+  background:rgba(139,0,0,0.3); border:1px solid var(--blood);
+  padding:1px 5px; border-radius:2px;
+}
+
+/* Typing area */
+.typing-section {
+  background:rgba(0,0,0,0.85);
+  border:1px solid var(--blood);
+  border-radius:4px;
+  padding:20px 24px;
+}
+.passage-display {
+  font-family:'Special Elite',serif;
+  font-size:clamp(16px,2.5vw,22px);
+  line-height:1.8;
+  margin-bottom:16px;
+  padding:16px;
+  background:rgba(139,0,0,0.05);
+  border:1px solid rgba(139,0,0,0.2);
+  border-radius:2px;
+  min-height:80px;
+}
+.char { display:inline; }
+.char.correct { color:#4caf50; }
+.char.wrong { color:#ff3333; background:rgba(255,0,0,0.15); text-decoration:underline; }
+.char.current { background:rgba(204,0,0,0.4); border-bottom:2px solid var(--red); animation:blink 0.6s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.char.untyped { color:#5a3030; }
+
+.typing-input {
+  width:100%; padding:12px 16px;
+  background:rgba(0,0,0,0.8);
+  border:1px solid var(--blood);
+  border-radius:2px;
+  color:var(--pale);
+  font-family:'Special Elite',serif;
+  font-size:18px;
+  outline:none;
+  caret-color:var(--red);
+  resize:none;
+  height:60px;
+}
+.typing-input:focus { border-color:var(--red); box-shadow:0 0 10px rgba(204,0,0,0.3); }
+.typing-input:disabled { opacity:0.4; cursor:not-allowed; }
+
+.stats-bar {
+  display:flex; gap:24px; margin-top:12px;
+  font-family:'VT323',monospace; font-size:20px;
+}
+.stat { display:flex; gap:6px; align-items:baseline; }
+.stat-label { color:#5a3030; font-size:14px; letter-spacing:2px; }
+.stat-val { color:var(--gold); }
+
+/* Elimination overlay */
+.elim-overlay {
+  display:none;
+  position:fixed; inset:0; z-index:100;
+  background:rgba(0,0,0,0.92);
+  flex-direction:column; align-items:center; justify-content:center;
+  gap:20px;
+  animation: fadeIn 0.5s ease;
+}
+.elim-overlay.show { display:flex; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+.doll-container { position:relative; }
+.doll-svg {
+  width:160px; height:200px;
+  animation: dollFloat 3s ease-in-out infinite;
+}
+@keyframes dollFloat {
+  0%,100%{transform:translateY(0) rotate(-2deg)}
+  50%{transform:translateY(-12px) rotate(2deg)}
+}
+.elim-title {
+  font-family:'Creepster',cursive;
+  font-size:52px;
+  color:var(--red);
+  text-shadow:var(--glow-red);
+  text-align:center;
+}
+.elim-sub {
+  font-family:'VT323',monospace;
+  font-size:20px;
+  color:#aa6666;
+  text-align:center;
+  letter-spacing:3px;
+}
+.spectator-msg {
+  font-family:'Special Elite',serif;
+  font-size:16px;
+  color:#5a3030;
+  text-align:center;
+  max-width:400px;
+}
+
+/* Doll spectator strip */
+.doll-graveyard {
+  display:flex; flex-wrap:wrap; gap:8px;
+  background:rgba(0,0,0,0.7);
+  border:1px solid rgba(139,0,0,0.3);
+  border-radius:4px;
+  padding:10px 14px;
+  min-height:64px;
+  align-items:center;
+}
+.doll-item {
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  animation: dollAppear 0.5s ease;
+}
+@keyframes dollAppear {
+  from{transform:scale(0) rotate(-20deg); opacity:0}
+  to{transform:scale(1) rotate(0); opacity:1}
+}
+.doll-item .mini-doll { font-size:28px; }
+.doll-item .doll-label { font-family:'VT323',monospace; font-size:11px; color:#5a2020; max-width:50px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* Round transition */
+.round-banner {
+  display:none;
+  position:fixed; inset:0; z-index:200;
+  background:rgba(0,0,0,0.95);
+  flex-direction:column; align-items:center; justify-content:center;
+  gap:12px;
+}
+.round-banner.show { display:flex; }
+.rb-title { font-family:'Creepster',cursive; font-size:72px; color:var(--red); text-shadow:var(--glow-red); animation:scaleIn 0.4s ease; }
+.rb-elim { font-family:'VT323',monospace; font-size:22px; color:#aa4444; letter-spacing:3px; }
+.rb-next { font-family:'Special Elite',serif; font-size:18px; color:#5a3030; animation:pulse 1s infinite; }
+@keyframes scaleIn { from{transform:scale(0.5);opacity:0} to{transform:scale(1);opacity:1} }
+
+/* Results */
+#screen-results { gap:20px; max-width:700px; margin:0 auto; }
+.trophy-row { display:flex; align-items:center; gap:16px; padding:14px 18px; border-radius:4px; margin-bottom:8px; animation:slideIn 0.4s ease; }
+.trophy-row.first { background:rgba(201,168,76,0.15); border:1px solid var(--gold); }
+.trophy-row.second { background:rgba(139,0,0,0.1); border:1px solid rgba(139,0,0,0.4); }
+.trophy-row.other { background:rgba(0,0,0,0.5); border:1px solid rgba(90,32,32,0.3); }
+.trophy-rank { font-family:'Creepster',cursive; font-size:36px; width:50px; text-align:center; }
+.trophy-name { flex:1; font-size:18px; }
+.trophy-wpm { font-family:'VT323',monospace; font-size:24px; color:var(--gold); }
+
+/* Teacher view overlay */
+.teacher-panel {
+  position:fixed; top:10px; right:10px; z-index:50;
+  background:rgba(0,0,0,0.95);
+  border:1px solid var(--gold);
+  border-radius:4px;
+  padding:14px;
+  width:220px;
+  box-shadow: var(--glow-gold);
+}
+.teacher-panel h4 { font-family:'Creepster',cursive; color:var(--gold); font-size:20px; margin-bottom:10px; }
+.teacher-btn {
+  display:block; width:100%;
+  padding:10px;
+  font-family:'Creepster',cursive;
+  font-size:18px;
+  background:rgba(139,0,0,0.3);
+  border:1px solid var(--blood);
+  border-radius:2px;
+  color:var(--pale);
+  cursor:pointer;
+  margin-bottom:6px;
+  transition: all 0.2s;
+}
+.teacher-btn:hover { background:rgba(204,0,0,0.4); }
+.teacher-btn.danger { border-color:#8b4000; background:rgba(139,64,0,0.3); }
+
+/* Toast */
+.toast {
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  background:rgba(0,0,0,0.95);
+  border:1px solid var(--blood);
+  border-radius:4px;
+  padding:10px 20px;
+  font-family:'VT323',monospace;
+  font-size:18px;
+  color:var(--pale);
+  z-index:300;
+  opacity:0;
+  transition:opacity 0.3s;
+  pointer-events:none;
+}
+.toast.show { opacity:1; }
+
+/* Countdown */
+.countdown-ring {
+  font-family:'Creepster',cursive;
+  font-size:80px;
+  color:var(--red);
+  text-shadow:var(--glow-red);
+  animation:scaleIn 0.3s ease;
+}
+</style>
+</head>
+<body>
+
+<!-- Hallway Canvas -->
+<canvas id="hallwayCanvas"></canvas>
+
+<!-- ════════════════════════════
+     TITLE / JOIN SCREEN
+════════════════════════════ -->
+<div id="screen-title" class="screen active">
+  <div class="eye-deco">👁️</div>
+  <div class="title-logo">TYPING<br>TERROR</div>
+  <div class="title-sub">MULTIPLAYER ELIMINATION</div>
+
+  <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-top:10px;">
+
+    <!-- JOIN -->
+    <div class="card">
+      <h2>⛓ ENTER IF YOU DARE</h2>
+      <div class="field-label">Class Period</div>
+      <select id="joinPeriod">
+        <option value="">— Select Period —</option>
+        <option value="1">1st Period</option>
+        <option value="2">2nd Period</option>
+        <option value="5">5th Period</option>
+        <option value="6">6th Period</option>
+      </select>
+      <div class="field-label">Your Name</div>
+      <input type="text" id="joinName" placeholder="Enter your name..." maxlength="18">
+      <div class="field-label">Room Code</div>
+      <input type="text" id="joinCode" placeholder="XXXX" maxlength="6" style="letter-spacing:8px;text-transform:uppercase;font-size:24px;">
+      <button class="btn btn-primary" onclick="joinGame()">🚪 ENTER THE HALLWAY</button>
+    </div>
+
+    <!-- CREATE (Teacher) -->
+    <div class="card">
+      <h2>🔑 TEACHER ROOM</h2>
+      <div class="field-label">Teacher PIN</div>
+      <input type="password" id="teacherPin" placeholder="Enter PIN..." maxlength="6">
+      <div class="field-label">Passage Set</div>
+      <select id="passageSet">
+        <option value="classic">Classic Scary Sentences</option>
+        <option value="spooky">Spooky Descriptions</option>
+        <option value="random">Random Mix</option>
+      </select>
+      <button class="btn btn-primary" onclick="createRoom()">☠️ CREATE ROOM</button>
+      <div class="divider">▸ ▸ ▸</div>
+      <div style="font-family:VT323,monospace;font-size:13px;color:#5a2020;text-align:center;">
+        Default PIN: <span style="color:#aa6666">1234</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     LOBBY
+════════════════════════════ -->
+<div id="screen-lobby" class="screen">
+  <div class="room-code-display">
+    <div class="label">ROOM CODE — SHARE WITH STUDENTS</div>
+    <div class="code" id="lobbyCode">????</div>
+  </div>
+
+  <div class="lobby-grid">
+    <div class="player-roster">
+      <h3>👻 Players in the Hallway (<span id="playerCount">0</span>)</h3>
+      <div id="playerList"></div>
+    </div>
+    <div class="lobby-info">
+      <h3>⚠️ Game Info</h3>
+      <div class="info-row"><span>Passage Set</span><span class="info-val" id="lobbyPassageSet">—</span></div>
+      <div class="info-row"><span>Elimination / Round</span><span class="info-val">Bottom 3 WPM</span></div>
+      <div class="info-row"><span>Min to Start</span><span class="info-val">2 Players</span></div>
+      <div class="info-row"><span>Your Name</span><span class="info-val" id="lobbyMyName">—</span></div>
+      <div class="info-row"><span>Period</span><span class="info-val" id="lobbyMyPeriod">—</span></div>
+      <div style="margin-top:20px;" id="startBtnArea"></div>
+    </div>
+  </div>
+
+  <div class="waiting-msg" id="waitingMsg">👁️ Awaiting teacher to start the horror...</div>
+</div>
+
+<!-- ════════════════════════════
+     GAME SCREEN
+════════════════════════════ -->
+<div id="screen-game" class="screen">
+
+  <div class="game-header">
+    <div class="round-badge">ROUND <span id="roundNum">1</span></div>
+    <div class="round-info">
+      <span id="aliveCount">?</span> SURVIVORS &nbsp;|&nbsp;
+      BOTTOM 3 ELIMINATED
+    </div>
+    <div class="stats-bar" style="margin:0;">
+      <div class="stat"><span class="stat-label">WPM</span><span class="stat-val" id="myWpm">0</span></div>
+      <div class="stat"><span class="stat-label">ACC</span><span class="stat-val" id="myAcc">100%</span></div>
+    </div>
+  </div>
+
+  <!-- Hallway runner track -->
+  <div class="hallway-track">
+    <div class="track-label">⚡ LIVE PROGRESS — ALL PLAYERS</div>
+    <div id="runnerList"></div>
+  </div>
+
+  <!-- Passage + input -->
+  <div class="typing-section">
+    <div class="passage-display" id="passageDisplay"></div>
+    <textarea class="typing-input" id="typingInput" placeholder="Start typing when the round begins..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+    <div class="stats-bar">
+      <div class="stat"><span class="stat-label">PROGRESS</span><span class="stat-val"><span id="progressPct">0</span>%</span></div>
+      <div class="stat"><span class="stat-label">ERRORS</span><span class="stat-val" id="errorCount">0</span></div>
+      <div class="stat"><span class="stat-label">RANK</span><span class="stat-val">#<span id="myRank">?</span></span></div>
+    </div>
+  </div>
+
+  <!-- Doll graveyard -->
+  <div>
+    <div class="track-label" style="padding:0 0 6px 2px;">💀 TURNED INTO DOLLS</div>
+    <div class="doll-graveyard" id="dollGraveyard">
+      <span style="font-family:VT323,monospace;color:#3a1515;font-size:14px;">No victims yet...</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════
+     RESULTS
+════════════════════════════ -->
+<div id="screen-results" class="screen">
+  <div class="title-logo" style="font-size:52px;">GAME OVER</div>
+  <div id="resultsList" style="width:100%"></div>
+  <button class="btn btn-primary" style="max-width:300px;margin-top:10px;" onclick="goHome()">🚪 Leave the Hallway</button>
+</div>
+
+<!-- Teacher Panel (injected when teacher) -->
+<div class="teacher-panel" id="teacherPanel" style="display:none">
+  <h4>👁️ TEACHER</h4>
+  <button class="teacher-btn" id="teacherStartBtn" onclick="teacherStart()">▶ START ROUND</button>
+  <button class="teacher-btn danger" onclick="teacherEndGame()">⬛ END GAME</button>
+  <div style="font-family:VT323,monospace;font-size:13px;color:#5a2020;margin-top:8px;">Room: <span id="tpRoomCode">—</span></div>
+</div>
+
+<!-- Elimination overlay -->
+<div class="elim-overlay" id="elimOverlay">
+  <div class="doll-container">
+    <svg class="doll-svg" viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg">
+      <!-- Doll body -->
+      <ellipse cx="80" cy="130" rx="35" ry="50" fill="#c8a882"/>
+      <!-- Dress -->
+      <path d="M45 120 Q80 160 115 120 L120 180 Q80 200 40 180 Z" fill="#8b0000"/>
+      <path d="M50 122 L45 180 Q80 192 115 180 L110 122" fill="#6b0000" opacity="0.5"/>
+      <!-- Lace trim -->
+      <path d="M45 120 Q80 135 115 120" stroke="#e8d5b0" stroke-width="2" fill="none" opacity="0.6"/>
+      <!-- Arms -->
+      <ellipse cx="42" cy="140" rx="10" ry="26" fill="#c8a882" transform="rotate(-10 42 140)"/>
+      <ellipse cx="118" cy="140" rx="10" ry="26" fill="#c8a882" transform="rotate(10 118 140)"/>
+      <!-- Hands -->
+      <circle cx="38" cy="163" r="9" fill="#c8a882"/>
+      <circle cx="122" cy="163" r="9" fill="#c8a882"/>
+      <!-- Head -->
+      <ellipse cx="80" cy="68" rx="32" ry="36" fill="#c8a882"/>
+      <!-- Hair -->
+      <path d="M48 55 Q80 20 112 55 Q115 40 80 28 Q45 40 48 55Z" fill="#2a1a0a"/>
+      <path d="M50 58 Q42 90 44 110" stroke="#2a1a0a" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M110 58 Q118 90 116 110" stroke="#2a1a0a" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <!-- Pigtails -->
+      <circle cx="46" cy="62" r="8" fill="#2a1a0a"/>
+      <circle cx="114" cy="62" r="8" fill="#2a1a0a"/>
+      <!-- Creepy eyes -->
+      <circle cx="68" cy="66" r="10" fill="white"/>
+      <circle cx="92" cy="66" r="10" fill="white"/>
+      <circle cx="70" cy="67" r="6" fill="#1a0000"/>
+      <circle cx="94" cy="67" r="6" fill="#1a0000"/>
+      <circle cx="71" cy="66" r="2.5" fill="white"/>
+      <circle cx="95" cy="66" r="2.5" fill="white"/>
+      <!-- Creepy smile -->
+      <path d="M65 84 Q80 96 95 84" stroke="#8b0000" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M68 85 L65 92 M72 88 L70 94 M80 90 L80 96 M88 88 L90 94 M92 85 L95 92" stroke="#8b0000" stroke-width="1.5" opacity="0.6"/>
+      <!-- Collar -->
+      <path d="M55 104 Q80 112 105 104" stroke="#e8d5b0" stroke-width="2" fill="none" opacity="0.7"/>
+      <!-- Buttons -->
+      <circle cx="80" cy="118" r="3" fill="#e8d5b0" opacity="0.6"/>
+      <circle cx="80" cy="128" r="3" fill="#e8d5b0" opacity="0.6"/>
+      <!-- Blush -->
+      <ellipse cx="62" cy="74" rx="8" ry="5" fill="#cc6666" opacity="0.3"/>
+      <ellipse cx="98" cy="74" rx="8" ry="5" fill="#cc6666" opacity="0.3"/>
+      <!-- X stitches on eyes for eliminated effect -->
+      <line x1="63" y1="61" x2="73" y2="71" stroke="#8b0000" stroke-width="2.5" opacity="0" id="xL1"/>
+      <line x1="73" y1="61" x2="63" y2="71" stroke="#8b0000" stroke-width="2.5" opacity="0" id="xL2"/>
+      <line x1="87" y1="61" x2="97" y2="71" stroke="#8b0000" stroke-width="2.5" opacity="0" id="xR1"/>
+      <line x1="97" y1="61" x2="87" y2="71" stroke="#8b0000" stroke-width="2.5" opacity="0" id="xR2"/>
+    </svg>
+  </div>
+  <div class="elim-title" id="elimTitle">YOU'VE BEEN DOLLIFIED</div>
+  <div class="elim-sub" id="elimSub">DANIELLE HAS CLAIMED YOU</div>
+  <div class="spectator-msg">You are now a spectator. Watch the others suffer in the hallway...</div>
+  <button class="btn btn-secondary" style="max-width:260px;margin-top:10px;" onclick="closeElim()">👁️ Watch as a Doll</button>
+</div>
+
+<!-- Round Banner -->
+<div class="round-banner" id="roundBanner">
+  <div class="rb-title" id="rbTitle">ROUND 1</div>
+  <div class="rb-elim" id="rbElim"></div>
+  <div class="countdown-ring" id="rbCountdown">3</div>
+  <div class="rb-next">Get ready to type...</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// HALLWAY CANVAS RENDERER
+// ═══════════════════════════════════════════
+const cvs = document.getElementById('hallwayCanvas');
+const ctx = cvs.getContext('2d');
+let flickerTimer = 0;
+
+function resizeCanvas() {
+  cvs.width = window.innerWidth;
+  cvs.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function drawHallway() {
+  const W = cvs.width, H = cvs.height;
+  ctx.clearRect(0,0,W,H);
+
+  const cx = W/2, vanishY = H*0.45;
+  flickerTimer += 0.01;
+  const flick = 0.85 + Math.sin(flickerTimer*7)*0.08 + (Math.random()<0.003 ? -0.4 : 0);
+
+  // Deep corridor fill
+  ctx.fillStyle = '#080101';
+  ctx.fillRect(0,0,W,H);
+
+  // Floor
+  const floorGrad = ctx.createLinearGradient(0, vanishY, 0, H);
+  floorGrad.addColorStop(0,'#1a0505');
+  floorGrad.addColorStop(1,'#080101');
+  ctx.fillStyle = floorGrad;
+  ctx.beginPath();
+  ctx.moveTo(0,H); ctx.lineTo(W,H);
+  ctx.lineTo(cx+80, vanishY); ctx.lineTo(cx-80, vanishY);
+  ctx.fill();
+
+  // Ceiling
+  const ceilGrad = ctx.createLinearGradient(0,0,0,vanishY);
+  ceilGrad.addColorStop(0,'#080101');
+  ceilGrad.addColorStop(1,'#140505');
+  ctx.fillStyle = ceilGrad;
+  ctx.beginPath();
+  ctx.moveTo(0,0); ctx.lineTo(W,0);
+  ctx.lineTo(cx+80,vanishY); ctx.lineTo(cx-80,vanishY);
+  ctx.fill();
+
+  // Wall panels — perspective lines
+  const numPanels = 7;
+  for(let i=0;i<=numPanels;i++){
+    const t = i/numPanels;
+    const lx = lerp(0, cx-80, t);
+    const rx = lerp(W, cx+80, t);
+    const y1L = lerp(0, vanishY, t);
+    const y1R = lerp(0, vanishY, t);
+    const y2L = lerp(H, vanishY, t);
+    const y2R = lerp(H, vanishY, t);
+    ctx.strokeStyle = `rgba(80,10,10,${0.3*(1-t)})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(lx, y2L); ctx.lineTo(cx-80+t*2, vanishY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(rx, y2R); ctx.lineTo(cx+80-t*2, vanishY);
+    ctx.stroke();
+    // Horizontal wall panels
+    if(i>0){
+      const py = lerp(H*0.95, vanishY, t);
+      const lEdge = lerp(0, cx-80, t);
+      const rEdge = lerp(W, cx+80, t);
+      ctx.strokeStyle = `rgba(60,8,8,${0.4*(1-t)})`;
+      ctx.beginPath();
+      ctx.moveTo(lEdge, py); ctx.lineTo(lx, y1L);
+      ctx.moveTo(rEdge, py); ctx.lineTo(rx, y1R);
+      ctx.stroke();
+    }
+  }
+
+  // Flickering overhead light
+  const lightAlpha = Math.max(0, flick) * 0.6;
+  const lightGrad = ctx.createRadialGradient(cx, vanishY-20, 0, cx, vanishY-20, W*0.7);
+  lightGrad.addColorStop(0, `rgba(255,180,120,${lightAlpha*0.3})`);
+  lightGrad.addColorStop(0.3, `rgba(200,80,80,${lightAlpha*0.1})`);
+  lightGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = lightGrad;
+  ctx.fillRect(0,0,W,H);
+
+  // Light bulb
+  ctx.fillStyle = `rgba(255,220,150,${lightAlpha})`;
+  ctx.beginPath();
+  ctx.arc(cx, vanishY-30, 8, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = `rgba(150,100,50,${lightAlpha*0.5})`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, 0); ctx.lineTo(cx, vanishY-38);
+  ctx.stroke();
+
+  // Corner shadows
+  const corners = [
+    [0,0,'#0f0000',1], [W,0,'#0f0000',1],
+    [0,H,'#080000',0.9], [W,H,'#080000',0.9]
+  ];
+  corners.forEach(([x,y,c,a])=>{
+    ctx.fillStyle = `rgba(8,0,0,0.45)`;
+    ctx.beginPath();
+    ctx.arc(x,y,W*0.5,0,Math.PI*2);
+    ctx.fill();
+  });
+
+  requestAnimationFrame(drawHallway);
+}
+function lerp(a,b,t){ return a+(b-a)*t; }
+drawHallway();
+
+// ═══════════════════════════════════════════
+// FIREBASE CONFIG
+// ═══════════════════════════════════════════
+const FB_URL = 'https://minigolf-fd9ea-default-rtdb.firebaseio.com';
+const DB_PATH = `${FB_URL}/typing_terror`;
+
+async function fbGet(path) {
+  const r = await fetch(`${DB_PATH}/${path}.json`);
+  return r.ok ? r.json() : null;
+}
+async function fbSet(path, data) {
+  await fetch(`${DB_PATH}/${path}.json`, {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+}
+async function fbUpdate(path, data) {
+  await fetch(`${DB_PATH}/${path}.json`, {
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+}
+async function fbPush(path, data) {
+  const r = await fetch(`${DB_PATH}/${path}.json`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+  const j = await r.json();
+  return j.name;
+}
+async function fbDelete(path) {
+  await fetch(`${DB_PATH}/${path}.json`, { method:'DELETE' });
+}
+
+// ═══════════════════════════════════════════
+// PASSAGES
+// ═══════════════════════════════════════════
+const PASSAGES = {
+  classic: [
+    "The door creaked open slowly, revealing a darkness that seemed to breathe. She took one step inside and heard the lock click behind her.",
+    "He found the old photograph in the attic. Everyone in it was smiling. Everyone except the figure standing in the corner that he had never seen before.",
+    "The children had been playing in the backyard all afternoon. When she called them in for dinner, she realized she had no children.",
+    "They said the house had been empty for thirty years. The fresh footprints in the dust leading up the staircase suggested otherwise.",
+    "She woke up at exactly three in the morning every night for a week. On the eighth night, something finally woke up with her.",
+    "The babysitter called the parents to ask if she could cover the clown statue in the corner. They told her to take the children and leave the house immediately.",
+    "I always lock my bedroom door before I sleep. This morning I woke up and the door was open. My slippers were on the wrong feet.",
+    "The hospital was quiet except for the soft beeping of machines. Visiting hours had ended hours ago. So who was humming in room four thirteen.",
+    "She left a bowl of milk on the porch every night for the stray cat. One morning she found the milk gone and two small handprints in the mud beside the bowl.",
+    "The old lighthouse had been closed for fifty years. The beam still swept the coast every night at midnight without fail.",
+  ],
+  spooky: [
+    "The hallway stretched on forever in both directions. Every door was identical. Every door was locked. Every door was breathing.",
+    "Danielle walked the school halls at night dragging her fingernails along the lockers. She was looking for someone who had not finished their homework.",
+    "The typing test began at nine o clock sharp. By nine fifteen three students had simply vanished from their chairs leaving only their keyboards still clicking.",
+    "Room two fourteen smelled like lavender and rust. The substitute teacher did not notice that her reflection in the window was not following her movements.",
+    "The fire drill alarm echoed through the building. All one hundred and thirty students lined up outside. When they returned inside there were one hundred and thirty one.",
+    "She found a note in her locker that said she had been chosen. There was no name on the note. There was no lock on the locker.",
+    "The school library closed at four every afternoon. At four fifteen the librarian returned for her forgotten keys and found every chair occupied by someone reading.",
+    "The gymnasium lights flickered twice before going out completely. When the emergency lighting came on Coach Barnes was standing perfectly still facing the wall.",
+    "The old computer in the back row of the lab had not been plugged in for three years. It turned on every day at two forty seven and displayed one name.",
+    "She stayed after class to finish her test. When she looked up the room was empty and dark. She did not remember the windows having bars on them this morning.",
+  ],
+  random: []
+};
+// Merge for random
+PASSAGES.random = [...PASSAGES.classic, ...PASSAGES.spooky].sort(()=>Math.random()-0.5);
+
+// ═══════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════
+const TEACHER_PIN = '1234';
+const DOLL_EMOJIS = ['🪆','👹','👻','🎎','☠️','👁️','🧸','🫀'];
+
+let state = {
+  roomCode: null,
+  playerId: null,
+  playerName: null,
+  period: null,
+  isTeacher: false,
+  isEliminated: false,
+  round: 1,
+  passage: '',
+  charIndex: 0,
+  errors: 0,
+  startTime: null,
+  pollInterval: null,
+  passageSet: 'classic',
+  passageIndex: 0,
+  finished: false,
+};
+
+// ═══════════════════════════════════════════
+// UTILITY
+// ═══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function toast(msg, dur=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), dur);
+}
+function genCode() {
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:4},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+function calcWpm(chars, ms) {
+  const mins = ms/60000;
+  return mins > 0 ? Math.round((chars/5)/mins) : 0;
+}
+function getDollEmoji(name) {
+  let hash=0;
+  for(const c of name) hash = (hash*31+c.charCodeAt(0))&0xfffffff;
+  return DOLL_EMOJIS[hash % DOLL_EMOJIS.length];
+}
+
+// ═══════════════════════════════════════════
+// CREATE ROOM (Teacher)
+// ═══════════════════════════════════════════
+async function createRoom() {
+  const pin = document.getElementById('teacherPin').value;
+  if(pin !== TEACHER_PIN) { toast('❌ Wrong PIN'); return; }
+  const passageSet = document.getElementById('passageSet').value;
+  const code = genCode();
+  state.roomCode = code;
+  state.isTeacher = true;
+  state.playerId = 'teacher_' + Date.now();
+  state.passageSet = passageSet;
+
+  await fbSet(`rooms/${code}`, {
+    status: 'lobby',
+    round: 1,
+    passageSet,
+    passageIndex: 0,
+    currentPassage: '',
+    createdAt: Date.now(),
+    roundStartTime: 0,
+    eliminated: {},
+    dolls: {},
+    players: {}
+  });
+
+  document.getElementById('lobbyCode').textContent = code;
+  document.getElementById('lobbyPassageSet').textContent = passageSet;
+  document.getElementById('lobbyMyName').textContent = 'Teacher';
+  document.getElementById('lobbyMyPeriod').textContent = '—';
+  document.getElementById('tpRoomCode').textContent = code;
+  document.getElementById('teacherPanel').style.display = 'block';
+  document.getElementById('startBtnArea').innerHTML = `<button class="btn btn-primary" onclick="teacherStart()">▶ START ROUND 1</button>`;
+  document.getElementById('waitingMsg').textContent = '👁️ Waiting for students to join...';
+
+  showScreen('screen-lobby');
+  startLobbyPoll();
+  toast('Room created! Code: ' + code);
+}
+
+// ═══════════════════════════════════════════
+// JOIN GAME (Student)
+// ═══════════════════════════════════════════
+async function joinGame() {
+  const period = document.getElementById('joinPeriod').value;
+  const name = document.getElementById('joinName').value.trim();
+  const code = document.getElementById('joinCode').value.trim().toUpperCase();
+
+  if(!period) { toast('Select your class period!'); return; }
+  if(!name) { toast('Enter your name!'); return; }
+  if(code.length < 4) { toast('Enter the room code!'); return; }
+
+  const room = await fbGet(`rooms/${code}`);
+  if(!room) { toast('❌ Room not found!'); return; }
+  if(room.status === 'ended') { toast('❌ Game already ended.'); return; }
+
+  state.roomCode = code;
+  state.playerName = name;
+  state.period = period;
+  state.passageSet = room.passageSet || 'classic';
+  state.playerId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+
+  await fbSet(`rooms/${code}/players/${state.playerId}`, {
+    name, period,
+    progress: 0,
+    wpm: 0,
+    finished: false,
+    eliminated: false,
+    joinedAt: Date.now()
+  });
+
+  document.getElementById('lobbyCode').textContent = code;
+  document.getElementById('lobbyPassageSet').textContent = room.passageSet;
+  document.getElementById('lobbyMyName').textContent = name;
+  document.getElementById('lobbyMyPeriod').textContent = `Period ${period}`;
+
+  showScreen('screen-lobby');
+  startLobbyPoll();
+  toast('Joined! Waiting for teacher...');
+}
+
+// ═══════════════════════════════════════════
+// LOBBY POLLING
+// ═══════════════════════════════════════════
+function startLobbyPoll() {
+  if(state.pollInterval) clearInterval(state.pollInterval);
+  state.pollInterval = setInterval(async () => {
+    const room = await fbGet(`rooms/${state.roomCode}`);
+    if(!room) return;
+
+    // Update player list
+    const players = room.players || {};
+    const keys = Object.keys(players);
+    document.getElementById('playerCount').textContent = keys.length;
+    const list = document.getElementById('playerList');
+    list.innerHTML = keys.map(k=>{
+      const p = players[k];
+      return `<div class="player-item">
+        <span class="runner-emoji">${getDollEmoji(p.name)}</span>
+        <span class="player-name">${p.name}</span>
+        <span class="player-period">P${p.period}</span>
+      </div>`;
+    }).join('');
+
+    if(room.status === 'playing') {
+      clearInterval(state.pollInterval);
+      startGameRound(room);
+    }
+  }, 1500);
+}
+
+// ═══════════════════════════════════════════
+// TEACHER: START ROUND
+// ═══════════════════════════════════════════
+async function teacherStart() {
+  const room = await fbGet(`rooms/${state.roomCode}`);
+  if(!room) return;
+  const players = room.players || {};
+  const alive = Object.values(players).filter(p=>!p.eliminated);
+  if(alive.length < 2) { toast('Need at least 2 players!'); return; }
+
+  const pSet = PASSAGES[room.passageSet] || PASSAGES.classic;
+  const idx = (room.passageIndex || 0) % pSet.length;
+  const passage = pSet[idx];
+
+  // Reset progress for alive players
+  const updates = {};
+  Object.keys(players).forEach(k=>{
+    if(!players[k].eliminated) {
+      updates[`rooms/${state.roomCode}/players/${k}/progress`] = 0;
+      updates[`rooms/${state.roomCode}/players/${k}/wpm`] = 0;
+      updates[`rooms/${state.roomCode}/players/${k}/finished`] = false;
+    }
+  });
+
+  await fetch(`${FB_URL}.json`, {
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      ...updates,
+      [`rooms/${state.roomCode}/status`]: 'playing',
+      [`rooms/${state.roomCode}/currentPassage`]: passage,
+      [`rooms/${state.roomCode}/passageIndex`]: idx + 1,
+      [`rooms/${state.roomCode}/roundStartTime`]: Date.now() + 3500,
+    })
+  });
+
+  document.getElementById('teacherStartBtn').disabled = true;
+  document.getElementById('teacherStartBtn').textContent = '⏳ Round Running...';
+}
+
+async function teacherEndGame() {
+  if(!confirm('End the game and show results?')) return;
+  await fbUpdate(`rooms/${state.roomCode}`, { status:'ended' });
+}
+
+// ═══════════════════════════════════════════
+// START GAME ROUND (client)
+// ═══════════════════════════════════════════
+async function startGameRound(room) {
+  state.passage = room.currentPassage || '';
+  state.round = room.round || 1;
+  state.charIndex = 0;
+  state.errors = 0;
+  state.startTime = null;
+  state.finished = false;
+
+  document.getElementById('roundNum').textContent = state.round;
+  renderPassage();
+  showScreen('screen-game');
+
+  const delay = (room.roundStartTime || Date.now()) - Date.now();
+  await showRoundBanner(state.round, delay);
+
+  const input = document.getElementById('typingInput');
+  if(!state.isEliminated) {
+    input.disabled = false;
+    input.value = '';
+    input.focus();
+  }
+
+  startGamePoll();
+}
+
+function showRoundBanner(round, delay) {
+  return new Promise(resolve => {
+    const banner = document.getElementById('roundBanner');
+    const title = document.getElementById('rbTitle');
+    const countdown = document.getElementById('rbCountdown');
+    title.textContent = `ROUND ${round}`;
+    banner.classList.add('show');
+
+    let count = Math.max(1, Math.round(delay/1000));
+    countdown.textContent = count;
+    const interval = setInterval(()=>{
+      count--;
+      if(count <= 0) {
+        clearInterval(interval);
+        banner.classList.remove('show');
+        state.startTime = Date.now();
+        resolve();
+      } else {
+        countdown.textContent = count;
+      }
+    }, 1000);
+  });
+}
+
+// ═══════════════════════════════════════════
+// PASSAGE RENDERING
+// ═══════════════════════════════════════════
+function renderPassage() {
+  const display = document.getElementById('passageDisplay');
+  display.innerHTML = state.passage.split('').map((ch, i) => {
+    let cls = 'untyped';
+    if(i < state.charIndex) cls = 'correct';
+    if(i === state.charIndex) cls = 'current';
+    const escaped = ch === ' ' ? '&nbsp;' : ch.replace(/</g,'&lt;');
+    return `<span class="char ${cls}">${escaped}</span>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// TYPING HANDLER
+// ═══════════════════════════════════════════
+document.getElementById('typingInput').addEventListener('input', async function(e) {
+  if(state.isEliminated || state.finished || !state.startTime) return;
+
+  const val = this.value;
+  const expected = state.passage[state.charIndex];
+
+  if(val.length === 0) return;
+
+  const typed = val[val.length-1];
+  if(typed === expected) {
+    state.charIndex++;
+    state.errors = 0; // only count current errors shown in UI separately
+  } else {
+    state.errors++;
+  }
+
+  // Clamp errors shown from total wrong presses
+  const totalErrors = (parseInt(document.getElementById('errorCount').textContent)||0) + (typed !== expected ? 1 : 0);
+  document.getElementById('errorCount').textContent = totalErrors;
+
+  // Clear input to keep it clean (single-character rolling)
+  if(typed === expected) this.value = '';
+
+  const progress = Math.round((state.charIndex / state.passage.length) * 100);
+  const elapsed = Date.now() - state.startTime;
+  const wpm = calcWpm(state.charIndex, elapsed);
+
+  document.getElementById('myWpm').textContent = wpm;
+  document.getElementById('progressPct').textContent = progress;
+  document.getElementById('myAcc').textContent = Math.max(0, Math.round((1 - totalErrors/Math.max(1,state.charIndex+totalErrors))*100)) + '%';
+
+  renderPassage();
+
+  // Push to Firebase
+  await fbUpdate(`rooms/${state.roomCode}/players/${state.playerId}`, {
+    progress, wpm, finished: state.charIndex >= state.passage.length
+  });
+
+  if(state.charIndex >= state.passage.length) {
+    state.finished = true;
+    this.disabled = true;
+    toast('✅ Passage complete! Wait for round end...');
+  }
+});
+
+// ═══════════════════════════════════════════
+// GAME POLLING
+// ═══════════════════════════════════════════
+function startGamePoll() {
+  if(state.pollInterval) clearInterval(state.pollInterval);
+  state.pollInterval = setInterval(async () => {
+    const room = await fbGet(`rooms/${state.roomCode}`);
+    if(!room) return;
+
+    const players = room.players || {};
+    const dolls = room.dolls || {};
+
+    // Update runner list
+    updateRunners(players);
+    updateGraveyard(dolls);
+
+    // Check if I'm newly eliminated
+    if(!state.isEliminated && players[state.playerId]?.eliminated) {
+      state.isEliminated = true;
+      showElimScreen();
+    }
+
+    // Teacher: check if all alive players finished → auto-eliminate bottom 3
+    if(state.isTeacher && room.status === 'playing') {
+      const alive = Object.entries(players).filter(([,p])=>!p.eliminated);
+      const allDone = alive.every(([,p])=>p.finished || p.progress >= 100);
+      if(alive.length > 0 && allDone) {
+        await endRound(room, players);
+      }
+    }
+
+    if(room.status === 'ended') {
+      clearInterval(state.pollInterval);
+      showResults(players);
+    }
+
+    if(room.status === 'playing' && room.round > state.round) {
+      clearInterval(state.pollInterval);
+      state.round = room.round;
+      startGameRound(room);
+    }
+
+  }, 800);
+}
+
+function updateRunners(players) {
+  const list = document.getElementById('runnerList');
+  const alive = Object.entries(players).filter(([,p])=>!p.eliminated)
+    .sort(([,a],[,b])=> b.wpm - a.wpm);
+
+  document.getElementById('aliveCount').textContent = alive.length;
+
+  // Rank
+  const myRankIndex = alive.findIndex(([k])=>k===state.playerId);
+  document.getElementById('myRank').textContent = myRankIndex >= 0 ? myRankIndex+1 : '💀';
+
+  // Bottom 3 markers
+  const bottom3 = alive.slice(-3).map(([k])=>k);
+
+  list.innerHTML = alive.map(([k,p],i)=>{
+    const isMe = k === state.playerId;
+    const isBottom = bottom3.includes(k) && alive.length > 3;
+    const fillW = Math.min(100, p.progress||0);
+    return `<div class="runner-row ${isMe?'is-me':''}">
+      <span class="runner-emoji">${getDollEmoji(p.name)}</span>
+      <span class="runner-name" style="${isMe?'color:var(--gold)':''}">${isMe?'⭐ YOU':p.name}</span>
+      <div class="runner-track">
+        <div class="runner-fill" style="width:${fillW}%"></div>
+      </div>
+      <span class="runner-wpm">${p.wpm||0}</span>
+      ${isBottom?'<span class="bottom-badge">⚠️ DANGER</span>':''}
+    </div>`;
+  }).join('');
+}
+
+function updateGraveyard(dolls) {
+  const yard = document.getElementById('dollGraveyard');
+  const keys = Object.keys(dolls);
+  if(keys.length === 0) {
+    yard.innerHTML = `<span style="font-family:VT323,monospace;color:#3a1515;font-size:14px;">No victims yet...</span>`;
+    return;
+  }
+  yard.innerHTML = keys.map(k=>{
+    const d = dolls[k];
+    return `<div class="doll-item">
+      <span class="mini-doll">${getDollEmoji(d.name)}</span>
+      <div class="doll-label">${d.name}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// END ROUND — ELIMINATE BOTTOM 3
+// ═══════════════════════════════════════════
+async function endRound(room, players) {
+  const alive = Object.entries(players).filter(([,p])=>!p.eliminated)
+    .sort(([,a],[,b])=> (a.wpm||0) - (b.wpm||0)); // ascending = worst first
+
+  const toElim = alive.slice(0, Math.min(3, alive.length-1)); // never elim last 1
+  if(toElim.length === 0) {
+    // Game over — 1 survivor
+    await fbUpdate(`rooms/${state.roomCode}`, { status:'ended' });
+    return;
+  }
+
+  const updates = {};
+  toElim.forEach(([k,p])=>{
+    updates[`rooms/${state.roomCode}/players/${k}/eliminated`] = true;
+    updates[`rooms/${state.roomCode}/dolls/${k}`] = { name: p.name, period: p.period, round: room.round };
+  });
+
+  const nextRound = (room.round||1) + 1;
+  updates[`rooms/${state.roomCode}/round`] = nextRound;
+  updates[`rooms/${state.roomCode}/status`] = 'lobby';
+
+  await fetch(`${FB_URL}.json`, {
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(updates)
+  });
+
+  document.getElementById('teacherStartBtn').disabled = false;
+  document.getElementById('teacherStartBtn').textContent = `▶ START ROUND ${nextRound}`;
+  toast(`Round ${room.round} over! ${toElim.length} eliminated.`);
+}
+
+// ═══════════════════════════════════════════
+// ELIMINATION SCREEN
+// ═══════════════════════════════════════════
+function showElimScreen() {
+  document.getElementById('typingInput').disabled = true;
+  // Activate X eyes on doll SVG
+  ['xL1','xL2','xR1','xR2'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.opacity='1';
+  });
+  document.getElementById('elimTitle').textContent = `${state.playerName.toUpperCase()}, YOU'VE BEEN DOLLIFIED`;
+  document.getElementById('elimOverlay').classList.add('show');
+}
+function closeElim() {
+  document.getElementById('elimOverlay').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════
+// RESULTS SCREEN
+// ═══════════════════════════════════════════
+async function showResults(players) {
+  clearInterval(state.pollInterval);
+
+  // Save to Firebase leaderboard
+  const myPlayer = players[state.playerId];
+  if(myPlayer && !state.isTeacher) {
+    await fbPush('typing_terror_scores', {
+      name: state.playerName,
+      period: state.period,
+      wpm: myPlayer.wpm || 0,
+      round: state.round,
+      eliminated: state.isEliminated,
+      roomCode: state.roomCode,
+      timestamp: Date.now()
+    });
+  }
+
+  const sorted = Object.values(players)
+    .filter(p=>p.name)
+    .sort((a,b)=>(b.wpm||0)-(a.wpm||0));
+
+  const html = sorted.map((p,i)=>{
+    const rankClass = i===0?'first':i===1?'second':'other';
+    const medal = i===0?'🏆':i===1?'🥈':i===2?'🥉':'💀';
+    return `<div class="trophy-row ${rankClass}">
+      <div class="trophy-rank">${medal}</div>
+      <div>
+        <div class="trophy-name">${p.name} ${p.eliminated?'🪆':''}</div>
+        <div style="font-family:VT323,monospace;font-size:14px;color:#5a3030;">Period ${p.period}</div>
+      </div>
+      <div class="trophy-wpm">${p.wpm||0} WPM</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('resultsList').innerHTML = html;
+  showScreen('screen-results');
+}
+
+function goHome() {
+  if(state.pollInterval) clearInterval(state.pollInterval);
+  state = { roomCode:null, playerId:null, playerName:null, period:null, isTeacher:false,
+    isEliminated:false, round:1, passage:'', charIndex:0, errors:0,
+    startTime:null, pollInterval:null, passageSet:'classic', passageIndex:0, finished:false };
+  document.getElementById('teacherPanel').style.display = 'none';
+  document.getElementById('elimOverlay').classList.remove('show');
+  showScreen('screen-title');
+}
+</script>
+</body>
+</html>
