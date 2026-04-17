@@ -980,6 +980,28 @@ function drawHallway() {
 function lerp(a,b,t){ return a+(b-a)*t; }
 drawHallway();
 
+// Unlock audio/video on first user gesture anywhere on page
+// This is required by Chromebook/Chrome autoplay policy
+let mediaUnlocked = false;
+function unlockMedia() {
+  if(mediaUnlocked) return;
+  mediaUnlocked = true;
+  // Unlock audio
+  const audio = document.getElementById('bgAudio');
+  if(audio) {
+    audio.play().then(()=>{ if(!soundEnabled) audio.pause(); }).catch(()=>{});
+  }
+  // Unlock video elements by loading them
+  ['won.mp4','lose.mp4'].forEach(src => {
+    const v = document.createElement('video');
+    v.src = src; v.muted = true; v.load();
+  });
+  document.removeEventListener('click', unlockMedia);
+  document.removeEventListener('keydown', unlockMedia);
+}
+document.addEventListener('click', unlockMedia);
+document.addEventListener('keydown', unlockMedia);
+
 // Test Firebase connectivity on load
 (async () => {
   try {
@@ -1382,6 +1404,8 @@ async function startGameRound(room) {
   state.startTime = null;
   state.finished = false;
   totalErrors = 0; // Reset error counter for new round
+  lastCharIndex = 0;
+  clearTimeout(fbWriteTimer);
   document.getElementById('errorCount').textContent = '0';
 
   document.getElementById('roundNum').textContent = state.round;
@@ -1447,55 +1471,73 @@ function renderPassage() {
 // ═══════════════════════════════════════════
 // TYPING HANDLER
 // ═══════════════════════════════════════════
-// Use keydown instead of input — more reliable on Chromebooks, blocks autocorrect/paste
+// Typing handler - hybrid approach for physical + Chromebook soft keyboards
 let totalErrors = 0;
-document.getElementById('typingInput').addEventListener('keydown', async function(e) {
+let lastCharIndex = 0; // track for input fallback
+let fbWriteTimer = null;
+
+function processTypedChar(typed) {
   if(state.isEliminated || state.finished || !state.startTime) return;
-
-  // Block paste, undo, and special combos
-  if(e.ctrlKey || e.metaKey) { e.preventDefault(); return; }
-
-  // Only handle printable single characters and space
-  if(e.key.length !== 1 && e.key !== ' ') return;
-  e.preventDefault(); // Prevent character from appearing in textarea
-
-  const typed = e.key;
   const expected = state.passage[state.charIndex];
-
   if(typed === expected) {
     state.charIndex++;
   } else {
     totalErrors++;
   }
-
   document.getElementById('errorCount').textContent = totalErrors;
-
   const progress = Math.round((state.charIndex / state.passage.length) * 100);
   const elapsed = Date.now() - state.startTime;
   const wpm = calcWpm(state.charIndex, elapsed);
-
   document.getElementById('myWpm').textContent = wpm;
   document.getElementById('progressPct').textContent = progress;
   document.getElementById('myAcc').textContent = Math.max(0, Math.round((1 - totalErrors/Math.max(1,state.charIndex+totalErrors))*100)) + '%';
-
   renderPassage();
 
-  // Push to Firebase every 3 chars to reduce writes
-  if(state.charIndex % 3 === 0 || state.charIndex >= state.passage.length) {
-    await fbUpdate(`rooms/${state.roomCode}/players/${state.playerId}`, {
-      progress, wpm, finished: state.charIndex >= state.passage.length
-    });
-  }
+  // Debounced Firebase write - fire and forget, never blocks typing
+  clearTimeout(fbWriteTimer);
+  fbWriteTimer = setTimeout(() => {
+    if(!state.roomCode || !state.playerId) return;
+    const done = state.charIndex >= state.passage.length;
+    fbUpdate(`rooms/${state.roomCode}/players/${state.playerId}`, {
+      progress: done ? 100 : progress, wpm, finished: done
+    }).catch(()=>{});
+  }, 300);
 
-  if(state.charIndex >= state.passage.length) {
+  if(state.charIndex >= state.passage.length && !state.finished) {
     state.finished = true;
-    this.disabled = true;
-    // Final Firebase update
-    await fbUpdate(`rooms/${state.roomCode}/players/${state.playerId}`, {
+    document.getElementById('typingInput').disabled = true;
+    fbUpdate(`rooms/${state.roomCode}/players/${state.playerId}`, {
       progress: 100, wpm, finished: true
-    });
+    }).catch(()=>{});
     toast('✅ Passage complete! Wait for round end...');
   }
+}
+
+// PRIMARY: keydown for physical keyboards
+document.getElementById('typingInput').addEventListener('keydown', function(e) {
+  if(e.ctrlKey || e.metaKey) { e.preventDefault(); return; }
+  if(e.key === 'Unidentified' || e.key.length !== 1) return;
+  e.preventDefault();
+  processTypedChar(e.key);
+  lastCharIndex = state.charIndex;
+});
+
+// FALLBACK: input event for Chromebook soft keyboard (fires when keydown gives Unidentified)
+document.getElementById('typingInput').addEventListener('input', function(e) {
+  if(state.isEliminated || state.finished || !state.startTime) return;
+  const val = this.value;
+  if(!val) return;
+  // Only use input event if keydown didn't already process this character
+  if(state.charIndex === lastCharIndex) {
+    // keydown didn't fire usefully - process via input
+    const typed = val[val.length - 1];
+    this.value = ''; // clear immediately
+    processTypedChar(typed);
+  } else {
+    // keydown already handled it - just clear the textarea
+    this.value = '';
+  }
+  lastCharIndex = state.charIndex;
 });
 
 // ═══════════════════════════════════════════
@@ -1687,14 +1729,16 @@ function playCutscene(type, onDone) {
   }
 
   pauseBgAudio(); // Pause bg during cutscene
-  // Try unmuted first, fall back to muted (Chromebook autoplay policy)
-  video.play().catch(() => {
-    video.muted = true;
-    video.play().catch(() => {
-      // Autoplay fully blocked — skip
-      overlay.style.display = 'none';
-      if(onDone) onDone();
-    });
+  // Always start muted (Chromebook autoplay policy requires this for non-gesture contexts)
+  // Then unmute immediately after play() starts
+  video.muted = true;
+  video.play().then(() => {
+    video.muted = false; // unmute once playing
+  }).catch(() => {
+    // Even muted play failed — just skip cutscene and continue
+    overlay.style.display = 'none';
+    video.src = '';
+    if(onDone) onDone();
   });
 }
 
