@@ -1794,7 +1794,7 @@ function playCutscene(type, onDone) {
       video.src = '';
       video.onended = null;
       overlay.removeEventListener('click', proceed);
-      resumeBgAudio(); // Restore bg after won cutscene
+      // No need to resume — won cutscene doesn't pause the music
       if(onDone) onDone();
     };
     video.onended = proceed;
@@ -1806,7 +1806,8 @@ function playCutscene(type, onDone) {
     video.onended = null;
   }
 
-  pauseBgAudio(); // Pause bg during cutscene
+  // Only pause bg audio for lose cutscene (loops) — won plays alongside music
+  if(type === 'lose') pauseBgAudio();
   // Always start muted (Chromebook autoplay policy requires this for non-gesture contexts)
   // Then unmute immediately after play() starts
   video.muted = true;
