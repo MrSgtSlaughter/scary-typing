@@ -530,6 +530,95 @@ select option { background:#1a0505; }
   text-shadow:var(--glow-red);
   animation:scaleIn 0.3s ease;
 }
+
+/* Sound toggle button */
+.sound-toggle {
+  position:fixed;
+  bottom:16px;
+  right:16px;
+  z-index:400;
+  background:rgba(0,0,0,0.9);
+  border:1px solid var(--blood);
+  border-radius:30px;
+  padding:8px 16px;
+  font-family:'VT323',monospace;
+  font-size:18px;
+  color:var(--pale);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  transition:all 0.2s;
+  box-shadow:0 0 12px rgba(139,0,0,0.3);
+}
+.sound-toggle:hover { border-color:var(--red); box-shadow:0 0 16px rgba(204,0,0,0.5); }
+.sound-toggle.muted { opacity:0.5; }
+
+/* Sound warning modal */
+.sound-warning {
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:600;
+  background:rgba(0,0,0,0.92);
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:20px;
+  animation:fadeIn 0.3s ease;
+}
+.sound-warning.show { display:flex; }
+.sw-card {
+  background:linear-gradient(135deg,rgba(30,5,5,0.98),rgba(10,0,0,0.99));
+  border:2px solid var(--blood);
+  border-radius:4px;
+  padding:36px 44px;
+  max-width:480px;
+  width:90%;
+  text-align:center;
+  box-shadow:0 0 40px rgba(139,0,0,0.4);
+}
+.sw-icon { font-size:56px; margin-bottom:8px; }
+.sw-title {
+  font-family:'Creepster',cursive;
+  font-size:36px;
+  color:var(--red);
+  text-shadow:var(--glow-red);
+  margin-bottom:12px;
+}
+.sw-body {
+  font-family:'Special Elite',serif;
+  font-size:16px;
+  color:#aa7777;
+  line-height:1.7;
+  margin-bottom:24px;
+}
+.sw-body strong { color:var(--pale); }
+.sw-buttons { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+.sw-btn-yes {
+  font-family:'Creepster',cursive;
+  font-size:22px;
+  padding:12px 28px;
+  background:linear-gradient(135deg,var(--blood),#5a0000);
+  border:none;
+  border-radius:2px;
+  color:var(--pale);
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.sw-btn-yes:hover { background:linear-gradient(135deg,var(--red),var(--blood)); transform:translateY(-1px); }
+.sw-btn-no {
+  font-family:'Creepster',cursive;
+  font-size:22px;
+  padding:12px 28px;
+  background:transparent;
+  border:1px solid #5a2020;
+  border-radius:2px;
+  color:#aa6666;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.sw-btn-no:hover { color:var(--pale); border-color:var(--blood); }
 </style>
 </head>
 <body>
@@ -572,8 +661,9 @@ select option { background:#1a0505; }
       <input type="password" id="teacherPin" placeholder="Enter PIN..." maxlength="6">
       <div class="field-label">Passage Set</div>
       <select id="passageSet">
-        <option value="classic">Classic Scary Sentences</option>
+        <option value="classic">Classic Creepy Sentences</option>
         <option value="spooky">Spooky Descriptions</option>
+        <option value="greece">Ancient Greece — Social Studies</option>
         <option value="random">Random Mix</option>
       </select>
       <button class="btn btn-primary" onclick="createRoom()">☠️ CREATE ROOM</button>
@@ -610,7 +700,7 @@ select option { background:#1a0505; }
     </div>
   </div>
 
-  <div class="waiting-msg" id="waitingMsg">👁️ Awaiting teacher to start the horror...</div>
+  <div class="waiting-msg" id="waitingMsg">👁️ Awaiting teacher to start the game...</div>
 </div>
 
 <!-- ════════════════════════════
@@ -746,6 +836,32 @@ select option { background:#1a0505; }
   <div id="cutsceneSubMsg" style="font-family:VT323,monospace;font-size:18px;color:#aa6666;letter-spacing:3px;margin-top:6px;text-align:center;"></div>
 </div>
 
+<!-- Background Audio -->
+<audio id="bgAudio" src="backgroundeffects.mp3" loop preload="auto" style="display:none;"></audio>
+
+<!-- Sound Warning Modal -->
+<div class="sound-warning" id="soundWarning">
+  <div class="sw-card">
+    <div class="sw-icon">🔊</div>
+    <div class="sw-title">SOUND WARNING</div>
+    <div class="sw-body">
+      This game includes <strong>creepy background audio</strong> — atmospheric sound effects that add to the eerie mood.<br><br>
+      It is <strong>loud and atmospheric</strong>. If you are in a quiet environment or prefer silence, you may want to keep sound off.<br><br>
+      You can toggle sound on or off at any time using the button in the bottom-right corner.
+    </div>
+    <div class="sw-buttons">
+      <button class="sw-btn-yes" onclick="enableSound()">😈 ENABLE SOUND</button>
+      <button class="sw-btn-no" onclick="dismissWarning()">🔇 KEEP MUTED</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sound Toggle Button -->
+<button class="sound-toggle muted" id="soundToggle" onclick="toggleSound()">
+  <span id="soundIcon">🔇</span>
+  <span id="soundLabel">SOUND OFF</span>
+</button>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -864,6 +980,21 @@ function drawHallway() {
 function lerp(a,b,t){ return a+(b-a)*t; }
 drawHallway();
 
+// Test Firebase connectivity on load
+(async () => {
+  try {
+    const r = await fetch('https://minigolf-fd9ea-default-rtdb.firebaseio.com/typing_terror/ping.json');
+    console.log('Firebase connectivity test:', r.status, r.ok ? '✅ REACHABLE' : '⚠️ HTTP ' + r.status);
+  } catch(e) {
+    console.error('Firebase connectivity test FAILED:', e.message);
+    // Show warning banner
+    const warn = document.createElement('div');
+    warn.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999;background:#8b0000;color:#fff;font-family:VT323,monospace;font-size:18px;padding:8px 16px;text-align:center;';
+    warn.textContent = '⚠️ Cannot reach Firebase (' + e.message + '). Game requires internet access to firebaseio.com';
+    document.body.appendChild(warn);
+  }
+})();
+
 // ═══════════════════════════════════════════
 // FIREBASE CONFIG
 // ═══════════════════════════════════════════
@@ -872,25 +1003,39 @@ const DB_PATH = `${FB_URL}/typing_terror`;
 
 async function fbGet(path) {
   const r = await fetch(`${DB_PATH}/${path}.json`);
-  return r.ok ? r.json() : null;
+  if(!r.ok) throw new Error(`Firebase GET failed: ${r.status}`);
+  return r.json();
 }
 async function fbSet(path, data) {
-  await fetch(`${DB_PATH}/${path}.json`, {
-    method:'PUT', headers:{'Content-Type':'application/json'},
+  // No Content-Type header — avoids CORS preflight on school networks
+  const r = await fetch(`${DB_PATH}/${path}.json`, {
+    method:'PUT',
     body: JSON.stringify(data)
   });
+  if(!r.ok) {
+    const txt = await r.text();
+    throw new Error(`Firebase SET failed (${r.status}): ${txt}`);
+  }
 }
 async function fbUpdate(path, data) {
-  await fetch(`${DB_PATH}/${path}.json`, {
-    method:'PATCH', headers:{'Content-Type':'application/json'},
+  const r = await fetch(`${DB_PATH}/${path}.json`, {
+    method:'PATCH',
     body: JSON.stringify(data)
   });
+  if(!r.ok) {
+    const txt = await r.text();
+    throw new Error(`Firebase UPDATE failed (${r.status}): ${txt}`);
+  }
 }
 async function fbPush(path, data) {
   const r = await fetch(`${DB_PATH}/${path}.json`, {
-    method:'POST', headers:{'Content-Type':'application/json'},
+    method:'POST',
     body: JSON.stringify(data)
   });
+  if(!r.ok) {
+    const txt = await r.text();
+    throw new Error(`Firebase PUSH failed (${r.status}): ${txt}`);
+  }
   const j = await r.json();
   return j.name;
 }
@@ -924,9 +1069,30 @@ const PASSAGES = {
 
     "The fire drill happened at eleven fifteen on a Tuesday. All one hundred and thirty two students filed out of the building in an orderly fashion and stood on the front lawn while the teachers took attendance. Everyone was present. The drill lasted four minutes. When the all clear sounded the students filed back inside and returned to their classrooms. Fourth period continued without incident. It was not until the end of the day when the office was printing dismissal slips that someone noticed the attendance records showed one hundred and thirty three students had returned to the building. Nobody could explain the difference. Nobody wanted to.",
   ],
-  random: []
+  random: [],
+  greece: [
+    "The Minoans were one of the earliest civilizations of ancient Greece and lived on the island of Crete beginning around 2600 BCE. They were skilled sailors and traders who built elaborate palace complexes like the one at Knossos. The palace at Knossos had hundreds of rooms, indoor plumbing, and colorful frescoes painted on its walls showing dolphins, athletes, and religious ceremonies. The Minoans were not warriors like later Greek civilizations. They relied on the sea to protect them and grew wealthy through trade with Egypt and other Mediterranean peoples. Around 1450 BCE their civilization mysteriously collapsed, possibly due to earthquakes, volcanic eruptions from the nearby island of Thera, or invasion by the Mycenaeans from the Greek mainland.",
+
+    "The Mycenaeans were a warlike people who dominated mainland Greece from around 1600 to 1100 BCE. Unlike the peaceful Minoans, the Mycenaeans built massive fortified cities with thick stone walls called cyclopean walls because later Greeks believed only giants called Cyclopes could have moved stones so large. The Mycenaeans absorbed many elements of Minoan culture including their writing system, which the Mycenaeans adapted into a script called Linear B. The Mycenaeans are believed by many historians to be the Greeks who fought in the legendary Trojan War. Around 1100 BCE Mycenaean civilization suddenly collapsed along with many other Bronze Age societies in what historians call the Bronze Age Collapse, plunging Greece into a dark age that lasted nearly three hundred years.",
+
+    "The city of Troy was located on the northwestern coast of what is now the country of Turkey. According to ancient Greek legend, a great war was fought between the Greeks and the Trojans after a Trojan prince named Paris took Helen, the wife of a Spartan king, back to Troy with him. The Greeks assembled a massive fleet of over one thousand ships and sailed to Troy to reclaim her. The war lasted ten years. The Greeks finally won by hiding soldiers inside a giant hollow wooden horse and convincing the Trojans to bring it inside their city walls. The Greek poet Homer wrote about this war in two epic poems called the Iliad and the Odyssey. For centuries people believed Troy was only a myth until a German archaeologist named Heinrich Schliemann excavated the site in the 1870s and found evidence of a real city that had been destroyed by fire.",
+
+    "The Dorians were a Greek-speaking people who migrated into the Greek peninsula around 1100 BCE, around the same time that Mycenaean civilization was collapsing. Historians have long debated whether the Dorians caused the collapse of the Mycenaeans or simply moved into the chaos left behind. The arrival of the Dorians contributed to a period known as the Greek Dark Ages that lasted from roughly 1100 to 800 BCE. During this time the population of Greece dropped sharply, long-distance trade nearly disappeared, and the art of writing was lost entirely. The Dorians settled in different parts of Greece and their descendants eventually built some of the most famous Greek city-states including Sparta. The recovery from the Dark Ages was slow but eventually led to the Archaic Period and the rise of the polis or city-state as the central unit of Greek civilization.",
+
+    "A tyrant in ancient Greece was not necessarily a cruel ruler the way we use the word today. In ancient Greek politics a tyrant was simply someone who seized power by force rather than inheriting it or being elected to it. Many Greek tyrants were actually popular leaders who gained support from the common people by promising to break the power of the wealthy aristocrats who had been controlling the city-states. Tyrants like Peisistratos of Athens used their power to build public works, support the arts, and improve conditions for farmers and poor citizens. However because tyrants ruled without legal authority and often passed power to their sons, most Greeks eventually came to distrust them. The era of tyrants in Greece lasted roughly from 650 to 500 BCE and in many city-states it paved the way for more democratic forms of government by weakening the old aristocratic families.",
+
+    "Draco was an Athenian lawmaker who in 621 BCE created the first written legal code in Athens. Before Draco the laws of Athens existed only in oral tradition and were interpreted by aristocratic judges who often ruled in favor of wealthy citizens. By writing the laws down Draco made them available to all citizens and reduced the power of judges to bend the rules. However Draco's laws became notorious for their extreme harshness. According to ancient accounts almost every crime from murder to stealing a cabbage was punishable by death. A later Athenian statesman named Demades said that Draco wrote his laws not in ink but in blood. Today we use the word draconian to describe any law or rule that is extremely harsh or severe. Despite their cruelty Draco's laws were historically important because they established the idea that laws should be written, public, and apply equally to all citizens.",
+
+    "Solon was an Athenian statesman and poet who was appointed to reform the laws of Athens around 594 BCE at a time when the city was in crisis. Wealthy landowners had forced many poor farmers into debt slavery, meaning farmers who could not repay their loans were forced to work as slaves for their creditors. Solon cancelled all existing debts, freed those who had been enslaved for debt, and banned debt slavery permanently. He also reorganized Athenian society into four classes based on wealth rather than birth, allowing wealthy non-aristocrats to participate in government for the first time. Solon created a new council of four hundred citizens to help govern the city and allowed all citizens regardless of class to participate in the assembly and the courts. Although Solon's reforms did not create full democracy they laid the foundation that later reformers like Cleisthenes would build upon.",
+
+    "Cleisthenes was an Athenian statesman who in 508 BCE created the reforms that most historians consider the true beginning of Athenian democracy. He reorganized the citizens of Athens into ten new tribes based on where they lived rather than on family or clan connections. This broke the power of the old aristocratic families who had controlled politics through tribal loyalties for generations. Cleisthenes created a new council of five hundred citizens called the Boule which was chosen by lottery from all ten tribes and was responsible for preparing legislation for the full assembly to vote on. He also introduced a practice called ostracism in which citizens could vote to exile any person they considered a danger to the democracy for ten years. The name comes from the Greek word ostrakon meaning pottery shard because citizens wrote the name of the person they wanted to exile on a broken piece of pottery.",
+
+    "Ancient Athens at the height of its democracy in the 400s BCE was a direct democracy in which citizens voted directly on laws rather than electing representatives to vote for them. However Athenian democracy was far more limited than modern democracy. Only adult male citizens could participate in the assembly and vote on laws. Women had no political rights whatsoever. Slaves who made up a significant portion of the Athenian population had no rights at all. Foreigners who lived in Athens known as metics could not vote even if they had lived there their entire lives. Historians estimate that only about ten to fifteen percent of the total population of Athens was eligible to participate in the democracy. Despite these limitations Athens developed many democratic institutions that influenced modern governments including trial by jury, majority rule, free speech in the assembly, and the concept that laws should apply equally to all citizens.",
+
+    "The Persian Wars were a series of conflicts between the Greek city-states and the Persian Empire that took place from 499 to 449 BCE. The Persian Empire under King Darius and later his son Xerxes was the largest empire the world had ever seen, stretching from Egypt to India. When Persia attempted to conquer Greece, the much smaller Greek city-states were forced to set aside their rivalries and fight together. At the Battle of Marathon in 490 BCE a small Athenian army defeated a much larger Persian force. According to legend a runner named Pheidippides ran the roughly twenty-five miles from Marathon to Athens to announce the victory and then collapsed and died, which is why modern marathon races are that length. Ten years later Xerxes invaded with an enormous army. After a heroic last stand by three hundred Spartans at Thermopylae, the Greeks eventually defeated the Persian fleet at Salamis and the Persian army at Plataea, saving Greek civilization from conquest.",
+  ]
 };
-PASSAGES.random = [...PASSAGES.classic, ...PASSAGES.spooky].sort(()=>Math.random()-0.5);
+PASSAGES.random = [...PASSAGES.classic, ...PASSAGES.spooky, ...PASSAGES.greece].sort(()=>Math.random()-0.5);
 
 // ═══════════════════════════════════════════
 // GAME STATE
@@ -983,28 +1149,60 @@ function getDollEmoji(name) {
 // ═══════════════════════════════════════════
 // CREATE ROOM (Teacher)
 // ═══════════════════════════════════════════
+let _creatingRoom = false;
 async function createRoom() {
+  if(_creatingRoom) { console.log('createRoom blocked - already in progress'); return; }
+  _creatingRoom = true;
+
+  const createBtn = document.querySelector('button[onclick="createRoom()"]');
+  if(createBtn) { createBtn.textContent = '⏳ Creating...'; createBtn.disabled = true; }
+
   const pin = document.getElementById('teacherPin').value;
-  if(pin !== TEACHER_PIN) { toast('❌ Wrong PIN'); return; }
+  if(pin !== TEACHER_PIN) {
+    toast('❌ Wrong PIN');
+    if(createBtn) { createBtn.textContent = '☠️ CREATE ROOM'; createBtn.disabled = false; }
+    _creatingRoom = false;
+    return;
+  }
+
   const passageSet = document.getElementById('passageSet').value;
   const code = genCode();
+
+  console.log('Attempting Firebase write to room:', code);
+
+  try {
+    const r = await fetch(`${DB_PATH}/rooms/${code}.json`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        status: 'lobby',
+        round: 1,
+        passageSet,
+        passageIndex: 0,
+        currentPassage: '',
+        createdAt: Date.now(),
+        roundStartTime: 0,
+        dolls: {},
+        players: {}
+      })
+    });
+    console.log('Firebase response status:', r.status);
+    if(!r.ok) {
+      const txt = await r.text();
+      throw new Error(`${r.status}: ${txt}`);
+    }
+  } catch(e) {
+    console.error('Firebase write failed:', e);
+    toast('❌ Firebase error: ' + e.message);
+    if(createBtn) { createBtn.textContent = '☠️ CREATE ROOM'; createBtn.disabled = false; }
+    _creatingRoom = false;
+    return;
+  }
+
+  console.log('Firebase write succeeded, advancing to lobby...');
   state.roomCode = code;
   state.isTeacher = true;
   state.playerId = 'teacher_' + Date.now();
   state.passageSet = passageSet;
-
-  await fbSet(`rooms/${code}`, {
-    status: 'lobby',
-    round: 1,
-    passageSet,
-    passageIndex: 0,
-    currentPassage: '',
-    createdAt: Date.now(),
-    roundStartTime: 0,
-    eliminated: {},
-    dolls: {},
-    players: {}
-  });
 
   document.getElementById('lobbyCode').textContent = code;
   document.getElementById('lobbyPassageSet').textContent = passageSet;
@@ -1017,7 +1215,10 @@ async function createRoom() {
 
   showScreen('screen-lobby');
   startLobbyPoll();
-  toast('Room created! Code: ' + code);
+  maybeShowSoundWarning();
+  toast('✅ Room created! Code: ' + code);
+  console.log('showScreen called, should now show lobby');
+  _creatingRoom = false;
 }
 
 // ═══════════════════════════════════════════
@@ -1032,8 +1233,13 @@ async function joinGame() {
   if(!name) { toast('Enter your name!'); return; }
   if(code.length < 4) { toast('Enter the room code!'); return; }
 
-  const room = await fbGet(`rooms/${code}`);
-  if(!room) { toast('❌ Room not found!'); return; }
+  let room;
+  try {
+    room = await fbGet(`rooms/${code}`);
+  } catch(e) {
+    toast('❌ Could not reach Firebase. Check connection.'); return;
+  }
+  if(!room) { toast('❌ Room not found! Check the code.'); return; }
   if(room.status === 'ended') { toast('❌ Game already ended.'); return; }
 
   state.roomCode = code;
@@ -1042,14 +1248,18 @@ async function joinGame() {
   state.passageSet = room.passageSet || 'classic';
   state.playerId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
 
-  await fbSet(`rooms/${code}/players/${state.playerId}`, {
-    name, period,
-    progress: 0,
-    wpm: 0,
-    finished: false,
-    eliminated: false,
-    joinedAt: Date.now()
-  });
+  try {
+    await fbSet(`rooms/${code}/players/${state.playerId}`, {
+      name, period,
+      progress: 0,
+      wpm: 0,
+      finished: false,
+      eliminated: false,
+      joinedAt: Date.now()
+    });
+  } catch(e) {
+    toast('❌ Could not join room: ' + e.message); return;
+  }
 
   document.getElementById('lobbyCode').textContent = code;
   document.getElementById('lobbyPassageSet').textContent = room.passageSet;
@@ -1059,6 +1269,7 @@ async function joinGame() {
   showScreen('screen-lobby');
   startLobbyPoll();
   toast('Joined! Waiting for teacher...');
+  maybeShowSoundWarning();
 }
 
 // ═══════════════════════════════════════════
@@ -1146,6 +1357,7 @@ async function teacherStart() {
   document.getElementById('roundNum').textContent = state.round;
   renderPassage();
   showScreen('screen-game');
+  startBgAudio(); // Begin creepy ambience
   const delay = startTime - Date.now();
   await showRoundBanner(state.round, delay);
   document.getElementById('typingInput').disabled = true;
@@ -1452,6 +1664,7 @@ function playCutscene(type, onDone) {
       video.src = '';
       video.onended = null;
       overlay.removeEventListener('click', proceed);
+      resumeBgAudio(); // Restore bg after won cutscene
       if(onDone) onDone();
     };
     video.onended = proceed;
@@ -1463,6 +1676,7 @@ function playCutscene(type, onDone) {
     video.onended = null;
   }
 
+  pauseBgAudio(); // Pause bg during cutscene
   // Try unmuted first, fall back to muted (Chromebook autoplay policy)
   video.play().catch(() => {
     video.muted = true;
@@ -1544,8 +1758,90 @@ async function showResults(players) {
   showScreen('screen-results');
 }
 
+// ═══════════════════════════════════════════
+// SOUND SYSTEM
+// ═══════════════════════════════════════════
+let soundEnabled = false;
+let soundWarningShown = false;
+
+function showSoundWarning() {
+  if(soundWarningShown) return;
+  soundWarningShown = true;
+  document.getElementById('soundWarning').classList.add('show');
+}
+
+function enableSound() {
+  soundEnabled = true;
+  document.getElementById('soundWarning').classList.remove('show');
+  updateSoundUI();
+  startBgAudio();
+}
+
+function dismissWarning() {
+  document.getElementById('soundWarning').classList.remove('show');
+  updateSoundUI();
+}
+
+function toggleSound() {
+  if(!soundWarningShown) {
+    // First time — show warning instead of instantly toggling
+    soundWarningShown = true;
+    document.getElementById('soundWarning').classList.add('show');
+    return;
+  }
+  soundEnabled = !soundEnabled;
+  updateSoundUI();
+  if(soundEnabled) {
+    startBgAudio();
+  } else {
+    stopBgAudio();
+  }
+}
+
+function updateSoundUI() {
+  const btn = document.getElementById('soundToggle');
+  const icon = document.getElementById('soundIcon');
+  const label = document.getElementById('soundLabel');
+  if(soundEnabled) {
+    btn.classList.remove('muted');
+    icon.textContent = '🔊';
+    label.textContent = 'SOUND ON';
+  } else {
+    btn.classList.add('muted');
+    icon.textContent = '🔇';
+    label.textContent = 'SOUND OFF';
+  }
+}
+
+function startBgAudio() {
+  if(!soundEnabled) return;
+  const audio = document.getElementById('bgAudio');
+  audio.volume = 0.35;
+  audio.play().catch(()=>{});
+}
+
+function stopBgAudio() {
+  const audio = document.getElementById('bgAudio');
+  audio.pause();
+}
+
+function pauseBgAudio() {
+  // Pause during cutscenes so they don't clash
+  stopBgAudio();
+}
+
+function resumeBgAudio() {
+  startBgAudio();
+}
+
+// Show warning after joining/creating room (first real interaction)
+function maybeShowSoundWarning() {
+  setTimeout(showSoundWarning, 800);
+}
+
 function goHome() {
   if(state.pollInterval) clearInterval(state.pollInterval);
+  stopBgAudio();
   state = { roomCode:null, playerId:null, playerName:null, period:null, isTeacher:false,
     isEliminated:false, round:1, passage:'', charIndex:0, errors:0,
     startTime:null, pollInterval:null, passageSet:'classic', passageIndex:0, finished:false };
