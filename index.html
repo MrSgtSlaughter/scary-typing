@@ -1353,6 +1353,7 @@ async function teacherStart() {
   state.errors = 0;
   state.startTime = null;
   state.finished = false;
+  totalErrors = 0;
   clearInterval(state.pollInterval);
   document.getElementById('roundNum').textContent = state.round;
   renderPassage();
@@ -1380,6 +1381,8 @@ async function startGameRound(room) {
   state.errors = 0;
   state.startTime = null;
   state.finished = false;
+  totalErrors = 0; // Reset error counter for new round
+  document.getElementById('errorCount').textContent = '0';
 
   document.getElementById('roundNum').textContent = state.round;
   renderPassage();
@@ -1395,6 +1398,7 @@ async function startGameRound(room) {
     input.focus();
   }
 
+  startBgAudio(); // Start ambient audio for students
   startGamePoll();
 }
 
@@ -1443,28 +1447,28 @@ function renderPassage() {
 // ═══════════════════════════════════════════
 // TYPING HANDLER
 // ═══════════════════════════════════════════
-document.getElementById('typingInput').addEventListener('input', async function(e) {
+// Use keydown instead of input — more reliable on Chromebooks, blocks autocorrect/paste
+let totalErrors = 0;
+document.getElementById('typingInput').addEventListener('keydown', async function(e) {
   if(state.isEliminated || state.finished || !state.startTime) return;
 
-  const val = this.value;
+  // Block paste, undo, and special combos
+  if(e.ctrlKey || e.metaKey) { e.preventDefault(); return; }
+
+  // Only handle printable single characters and space
+  if(e.key.length !== 1 && e.key !== ' ') return;
+  e.preventDefault(); // Prevent character from appearing in textarea
+
+  const typed = e.key;
   const expected = state.passage[state.charIndex];
 
-  if(val.length === 0) return;
-
-  const typed = val[val.length-1];
   if(typed === expected) {
     state.charIndex++;
-    state.errors = 0; // only count current errors shown in UI separately
   } else {
-    state.errors++;
+    totalErrors++;
   }
 
-  // Clamp errors shown from total wrong presses
-  const totalErrors = (parseInt(document.getElementById('errorCount').textContent)||0) + (typed !== expected ? 1 : 0);
   document.getElementById('errorCount').textContent = totalErrors;
-
-  // Clear input to keep it clean (single-character rolling)
-  if(typed === expected) this.value = '';
 
   const progress = Math.round((state.charIndex / state.passage.length) * 100);
   const elapsed = Date.now() - state.startTime;
@@ -1476,14 +1480,20 @@ document.getElementById('typingInput').addEventListener('input', async function(
 
   renderPassage();
 
-  // Push to Firebase
-  await fbUpdate(`rooms/${state.roomCode}/players/${state.playerId}`, {
-    progress, wpm, finished: state.charIndex >= state.passage.length
-  });
+  // Push to Firebase every 3 chars to reduce writes
+  if(state.charIndex % 3 === 0 || state.charIndex >= state.passage.length) {
+    await fbUpdate(`rooms/${state.roomCode}/players/${state.playerId}`, {
+      progress, wpm, finished: state.charIndex >= state.passage.length
+    });
+  }
 
   if(state.charIndex >= state.passage.length) {
     state.finished = true;
     this.disabled = true;
+    // Final Firebase update
+    await fbUpdate(`rooms/${state.roomCode}/players/${state.playerId}`, {
+      progress: 100, wpm, finished: true
+    });
     toast('✅ Passage complete! Wait for round end...');
   }
 });
