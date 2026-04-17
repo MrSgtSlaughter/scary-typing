@@ -664,6 +664,7 @@ select option { background:#1a0505; }
         <option value="classic">Classic Creepy Sentences</option>
         <option value="spooky">Spooky Descriptions</option>
         <option value="greece">Ancient Greece — Social Studies</option>
+        <option value="greecesentences">Ancient Greece — Complex Sentences</option>
         <option value="random">Random Mix</option>
       </select>
       <button class="btn btn-primary" onclick="createRoom()">☠️ CREATE ROOM</button>
@@ -729,6 +730,11 @@ select option { background:#1a0505; }
   <!-- Passage + input -->
   <div class="typing-section">
     <div class="passage-display" id="passageDisplay"></div>
+    <div id="tapToBeginBtn" style="display:none;text-align:center;padding:16px 0 8px;">
+      <button onclick="" style="font-family:Creepster,cursive;font-size:28px;padding:14px 40px;background:linear-gradient(135deg,#8b0000,#5a0000);border:none;border-radius:4px;color:#e8d5b0;cursor:pointer;box-shadow:0 0 20px rgba(139,0,0,0.5);letter-spacing:3px;">
+        👁️ TAP TO BEGIN TYPING
+      </button>
+    </div>
     <textarea class="typing-input" id="typingInput" placeholder="Start typing when the round begins..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
     <div class="stats-bar">
       <div class="stat"><span class="stat-label">PROGRESS</span><span class="stat-val"><span id="progressPct">0</span>%</span></div>
@@ -754,6 +760,7 @@ select option { background:#1a0505; }
   <div class="title-logo" style="font-size:52px;">GAME OVER</div>
   <div id="resultsList" style="width:100%"></div>
   <button class="btn btn-primary" style="max-width:300px;margin-top:10px;" onclick="goHome()">🚪 Leave the Hallway</button>
+  <div style="font-family:VT323,monospace;font-size:13px;color:#3a1515;margin-top:16px;">© 2026 Jason Slaughter · PixelED Path, LLC</div>
 </div>
 
 <!-- Teacher Panel (injected when teacher) -->
@@ -1112,9 +1119,30 @@ const PASSAGES = {
     "Ancient Athens at the height of its democracy in the 400s BCE was a direct democracy in which citizens voted directly on laws rather than electing representatives to vote for them. However Athenian democracy was far more limited than modern democracy. Only adult male citizens could participate in the assembly and vote on laws. Women had no political rights whatsoever. Slaves who made up a significant portion of the Athenian population had no rights at all. Foreigners who lived in Athens known as metics could not vote even if they had lived there their entire lives. Historians estimate that only about ten to fifteen percent of the total population of Athens was eligible to participate in the democracy. Despite these limitations Athens developed many democratic institutions that influenced modern governments including trial by jury, majority rule, free speech in the assembly, and the concept that laws should apply equally to all citizens.",
 
     "The Persian Wars were a series of conflicts between the Greek city-states and the Persian Empire that took place from 499 to 449 BCE. The Persian Empire under King Darius and later his son Xerxes was the largest empire the world had ever seen, stretching from Egypt to India. When Persia attempted to conquer Greece, the much smaller Greek city-states were forced to set aside their rivalries and fight together. At the Battle of Marathon in 490 BCE a small Athenian army defeated a much larger Persian force. According to legend a runner named Pheidippides ran the roughly twenty-five miles from Marathon to Athens to announce the victory and then collapsed and died, which is why modern marathon races are that length. Ten years later Xerxes invaded with an enormous army. After a heroic last stand by three hundred Spartans at Thermopylae, the Greeks eventually defeated the Persian fleet at Salamis and the Persian army at Plataea, saving Greek civilization from conquest.",
+  ],
+  greecesentences: [
+    "Although the Minoans of Crete were among the most sophisticated Bronze Age peoples in the Mediterranean, trading luxury goods across vast sea routes and constructing elaborate multi-story palace complexes adorned with vivid frescoes, their civilization vanished so abruptly around 1450 BCE that historians still debate whether earthquakes, volcanic eruptions from the island of Thera, or an invasion by the Mycenaeans from the Greek mainland was ultimately responsible for their collapse.",
+
+    "Because the Mycenaeans were a warlike people who built massive fortified cities protected by walls so enormous that later Greeks assumed only mythical giants called Cyclopes could have moved the stones, they were far better prepared for military conflict than the Minoans, yet even their formidable civilization crumbled during the widespread Bronze Age Collapse around 1100 BCE, plunging Greece into a dark age from which it would not fully recover for nearly three centuries.",
+
+    "When the Greek poet Homer composed his two great epic poems, the Iliad and the Odyssey, he was drawing on centuries of oral tradition about the legendary Trojan War, in which a massive Greek fleet of more than one thousand ships supposedly sailed to the fortified city of Troy on the northwestern coast of modern Turkey to reclaim Helen, the wife of a Spartan king who had been taken by the Trojan prince Paris, and after ten years of brutal warfare the Greeks finally prevailed by concealing soldiers inside a giant hollow wooden horse.",
+
+    "Although modern people use the word tyrant to mean a cruel and oppressive ruler, the ancient Greeks used it simply to describe someone who seized political power by force rather than inheriting it or being lawfully elected, which is why figures like Peisistratos of Athens, who was technically a tyrant, could still be remembered as a popular and effective leader who built public works, supported the arts, and improved conditions for farmers and poor citizens.",
+
+    "Because Draco recognized that Athens was suffering from inconsistent and often corrupt justice delivered by aristocratic judges who favored the wealthy, he created the city's first written legal code in 621 BCE, making the laws visible and equal for all citizens, yet his punishments were so extraordinarily severe that a later Athenian politician named Demades reportedly joked that Draco had written his laws not in ink but in blood, giving us the word draconian to describe any rule or punishment that is needlessly harsh.",
+
+    "When Solon was appointed to reform Athens around 594 BCE, he faced a city on the verge of civil war because wealthy landowners had used debt laws to enslave thousands of poor farmers, so Solon cancelled all existing debts, freed every person who had been enslaved for failure to repay a loan, permanently banned the practice of debt slavery, and reorganized Athenian society into four classes based on wealth rather than birth, giving prosperous non-aristocrats access to government for the very first time.",
+
+    "Although Cleisthenes is often called the father of Athenian democracy because of the sweeping reforms he introduced in 508 BCE, including reorganizing citizens into ten new tribes based on geography rather than family connections, creating the five-hundred-member Boule chosen by lottery, and introducing the practice of ostracism by which citizens could vote to exile a potentially dangerous individual for ten years by scratching a name onto a broken piece of pottery called an ostrakon, his reforms still left women, slaves, and foreigners entirely outside the democratic system.",
+
+    "Even at the height of its power in the fifth century BCE, Athenian democracy was far more limited than the democracies of the modern world, since only adult male citizens who had been born in Athens were permitted to speak and vote in the assembly, while women, enslaved people who made up a large portion of the population, and foreign residents known as metics were completely excluded from political life regardless of how long they had lived in the city or how much they had contributed to its economy.",
+
+    "When the Persian king Darius sent his fleet to punish Athens for supporting a Greek rebellion against Persian rule, the Athenians met the much larger Persian army on the plain of Marathon in 490 BCE and, using a bold tactical formation that focused their strongest soldiers on the flanks while deliberately thinning the center, managed to surround and defeat the Persians so decisively that the victory became one of the most celebrated moments in Greek history, inspiring the legend of the runner Pheidippides who raced the roughly twenty-five miles back to Athens to deliver the news before dying of exhaustion.",
+
+    "Because the Greek city-states, despite their fierce independence and constant rivalry with one another, understood that the enormous Persian Empire under Xerxes posed an existential threat to their way of life, they formed an unprecedented military alliance in 480 BCE, and although three hundred Spartan warriors famously sacrificed themselves at the narrow mountain pass of Thermopylae to slow the Persian advance, it was ultimately the Greek naval victory at the Battle of Salamis, where the smaller and more maneuverable Greek ships trapped the massive Persian fleet in a narrow strait and destroyed it, that turned the tide of the war and saved Greek civilization from conquest.",
   ]
 };
-PASSAGES.random = [...PASSAGES.classic, ...PASSAGES.spooky, ...PASSAGES.greece].sort(()=>Math.random()-0.5);
+PASSAGES.random = [...PASSAGES.classic, ...PASSAGES.spooky, ...PASSAGES.greece, ...PASSAGES.greecesentences].sort(()=>Math.random()-0.5);
 
 // ═══════════════════════════════════════════
 // GAME STATE
@@ -1385,6 +1413,8 @@ async function teacherStart() {
   await showRoundBanner(state.round, delay);
   document.getElementById('typingInput').disabled = true;
   document.getElementById('typingInput').placeholder = '👁️ Teacher view — watching students...';
+  document.getElementById('tapToBeginBtn').style.display = 'none';
+  startBgAudio(); // Teacher gets audio too
   startGamePoll();
 }
 
@@ -1407,6 +1437,8 @@ async function startGameRound(room) {
   lastCharIndex = 0;
   clearTimeout(fbWriteTimer);
   document.getElementById('errorCount').textContent = '0';
+  const tapBtn = document.getElementById('tapToBeginBtn');
+  if(tapBtn) tapBtn.style.display = 'none';
 
   document.getElementById('roundNum').textContent = state.round;
   renderPassage();
@@ -1416,13 +1448,23 @@ async function startGameRound(room) {
   await showRoundBanner(state.round, delay);
 
   const input = document.getElementById('typingInput');
+
   if(!state.isEliminated) {
-    input.disabled = false;
-    input.value = '';
-    input.focus();
+    // Show TAP TO BEGIN button — this click gesture unlocks audio/video on Chromebooks
+    const tapBtn = document.getElementById('tapToBeginBtn');
+    tapBtn.style.display = 'block';
+    tapBtn.onclick = () => {
+      tapBtn.style.display = 'none';
+      input.disabled = false;
+      input.value = '';
+      input.focus();
+      startBgAudio(); // Audio starts FROM user gesture — guaranteed to work on Chromebooks
+    };
+  } else {
+    // Eliminated players are spectators — just start audio if enabled
+    startBgAudio();
   }
 
-  startBgAudio(); // Start ambient audio for students
   startGamePoll();
 }
 
