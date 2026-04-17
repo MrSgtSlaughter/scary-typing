@@ -771,6 +771,30 @@ select option { background:#1a0505; }
   <div style="font-family:VT323,monospace;font-size:13px;color:#5a2020;margin-top:8px;">Room: <span id="tpRoomCode">—</span></div>
 </div>
 
+<!-- Teacher Round Over Overlay (stays on game screen) -->
+<div id="teacherRoundOver" style="display:none;position:fixed;inset:0;z-index:90;background:rgba(0,0,0,0.88);flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+  <div style="font-family:Creepster,cursive;font-size:56px;color:#cc0000;text-shadow:0 0 20px #8b000088;text-align:center;">ROUND <span id="tro_round">1</span> OVER</div>
+  <div id="tro_eliminated" style="font-family:VT323,monospace;font-size:22px;color:#aa6666;letter-spacing:3px;text-align:center;"></div>
+  <div id="tro_remaining" style="font-family:VT323,monospace;font-size:20px;color:#c9a84c;text-align:center;"></div>
+  <button id="tro_startBtn" onclick="teacherStartFromOverlay()"
+    style="font-family:Creepster,cursive;font-size:30px;padding:18px 50px;background:linear-gradient(135deg,#8b0000,#5a0000);border:2px solid #cc0000;border-radius:4px;color:#e8d5b0;cursor:pointer;box-shadow:0 0 30px rgba(204,0,0,0.5);letter-spacing:3px;margin-top:10px;">
+    ▶ START ROUND <span id="tro_nextRound">2</span>
+  </button>
+  <button onclick="teacherEndGame()" style="font-family:Creepster,cursive;font-size:18px;padding:10px 30px;background:transparent;border:1px solid #5a2020;border-radius:4px;color:#aa6666;cursor:pointer;letter-spacing:2px;">
+    ⬛ END GAME
+  </button>
+</div>
+
+<!-- Elimination Tap Prompt (needs gesture before video) -->
+<div id="elimTapPrompt" style="display:none;position:fixed;inset:0;z-index:150;background:rgba(0,0,0,0.95);flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+  <div style="font-family:Creepster,cursive;font-size:52px;color:#cc0000;text-shadow:0 0 20px #8b000088;text-align:center;">DANIELLE<br>HAS CLAIMED YOU</div>
+  <div style="font-size:64px;">🪆</div>
+  <button onclick="document.getElementById('elimTapPrompt').style.display='none'; showElimScreen(); playCutscene('lose',null);"
+    style="font-family:Creepster,cursive;font-size:26px;padding:16px 44px;background:linear-gradient(135deg,#8b0000,#5a0000);border:none;border-radius:4px;color:#e8d5b0;cursor:pointer;box-shadow:0 0 20px rgba(139,0,0,0.6);letter-spacing:3px;margin-top:10px;">
+    👁️ TAP TO SEE YOUR FATE
+  </button>
+</div>
+
 <!-- Elimination overlay -->
 <div class="elim-overlay" id="elimOverlay">
   <div class="doll-container">
@@ -1418,8 +1442,15 @@ async function teacherStart() {
   startGamePoll();
 }
 
+async function teacherStartFromOverlay() {
+  document.getElementById('teacherRoundOver').style.display = 'none';
+  document.getElementById('tro_startBtn').disabled = true;
+  await teacherStart();
+}
+
 async function teacherEndGame() {
   if(!confirm('End the game and show results?')) return;
+  document.getElementById('teacherRoundOver').style.display = 'none';
   await fbUpdate(`rooms/${state.roomCode}`, { status:'ended' });
 }
 
@@ -1551,7 +1582,10 @@ function processTypedChar(typed) {
     fbUpdate(`rooms/${state.roomCode}/players/${state.playerId}`, {
       progress: 100, wpm, finished: true
     }).catch(()=>{});
-    toast('✅ Passage complete! Wait for round end...');
+    // Play won cutscene immediately when student finishes — from typing gesture context
+    if(!state.isEliminated) {
+      playCutscene('won', null); // null = just play, lobby transition handled by poll
+    }
   }
 }
 
@@ -1601,7 +1635,9 @@ function startGamePoll() {
     // Check if I'm newly eliminated
     if(!state.isEliminated && players[state.playerId]?.eliminated) {
       state.isEliminated = true;
-      showElimScreen();
+      document.getElementById('typingInput').disabled = true;
+      // Show tap prompt — tap gesture needed to play video on Chromebook
+      showElimTapPrompt();
     }
 
     // Teacher: check if all alive players finished → auto-eliminate bottom 3
@@ -1632,18 +1668,11 @@ function startGamePoll() {
       clearInterval(state.pollInterval);
       const prevRound = state.round;
       state.round = room.round;
-      if(!state.isEliminated) {
-        // Survived — play won cutscene then go to lobby
-        playCutscene('won', () => {
-          showScreen('screen-lobby');
-          document.getElementById('waitingMsg').textContent = `☠️ Round ${prevRound} ended. Waiting for next round...`;
-          startLobbyPoll();
-        });
-      } else {
-        showScreen('screen-lobby');
-        document.getElementById('waitingMsg').textContent = `☠️ Round ${prevRound} ended. Waiting for next round...`;
-        startLobbyPoll();
-      }
+      // Stop any playing cutscene, go to lobby
+      stopCutscene();
+      showScreen('screen-lobby');
+      document.getElementById('waitingMsg').textContent = `☠️ Round ${prevRound} ended. Waiting for next round...`;
+      startLobbyPoll();
       return;
     }
 
@@ -1724,14 +1753,21 @@ async function endRound(room, players) {
   await fbUpdate(`rooms/${state.roomCode}`, { round: nextRound, status: 'lobby' });
 
   state.endingRound = false;
+
+  // Update teacher panel button
   document.getElementById('teacherStartBtn').disabled = false;
   document.getElementById('teacherStartBtn').textContent = `▶ START ROUND ${nextRound}`;
-  toast(`Round ${room.round} over! ${toElim.length} dollified.`);
 
-  // Teacher goes back to lobby view
-  clearInterval(state.pollInterval);
-  showScreen('screen-lobby');
-  startLobbyPoll();
+  // Show round-over overlay on game screen (teacher stays and watches)
+  const elimNames = toElim.map(([,p])=>p.name).join(', ');
+  const aliveLeft = alive.length - toElim.length;
+  document.getElementById('tro_round').textContent = room.round;
+  document.getElementById('tro_nextRound').textContent = nextRound;
+  document.getElementById('tro_eliminated').textContent = `💀 DOLLIFIED: ${elimNames}`;
+  document.getElementById('tro_remaining').textContent = `${aliveLeft} survivor${aliveLeft !== 1 ? 's' : ''} remaining`;
+  document.getElementById('tro_startBtn').disabled = false;
+  document.getElementById('teacherRoundOver').style.display = 'flex';
+  showScreen('screen-game');
 }
 
 // ═══════════════════════════════════════════
@@ -1796,6 +1832,17 @@ function stopCutscene() {
 // ═══════════════════════════════════════════
 // ELIMINATION SCREEN
 // ═══════════════════════════════════════════
+function showElimTapPrompt() {
+  // Must get a user gesture to play video — show a tap prompt first
+  const prompt = document.getElementById('elimTapPrompt');
+  if(prompt) {
+    prompt.style.display = 'flex';
+  } else {
+    // Fallback: just show elim screen without video
+    showElimScreen();
+  }
+}
+
 function showElimScreen() {
   document.getElementById('typingInput').disabled = true;
   // Activate X eyes on doll SVG
@@ -1818,6 +1865,7 @@ function closeElim() {
 async function showResults(players) {
   clearInterval(state.pollInterval);
   stopCutscene(); // Stop any looping lose video
+  document.getElementById('teacherRoundOver').style.display = 'none';
 
   // Save to Firebase leaderboard
   const myPlayer = players[state.playerId];
@@ -1912,7 +1960,7 @@ function updateSoundUI() {
 function startBgAudio() {
   if(!soundEnabled) return;
   const audio = document.getElementById('bgAudio');
-  audio.volume = 0.35;
+  audio.volume = 0.85;
   audio.play().catch(()=>{});
 }
 
@@ -1938,6 +1986,10 @@ function maybeShowSoundWarning() {
 function goHome() {
   if(state.pollInterval) clearInterval(state.pollInterval);
   stopBgAudio();
+  const etp = document.getElementById('elimTapPrompt');
+  if(etp) etp.style.display = 'none';
+  const tro = document.getElementById('teacherRoundOver');
+  if(tro) tro.style.display = 'none';
   state = { roomCode:null, playerId:null, playerName:null, period:null, isTeacher:false,
     isEliminated:false, round:1, passage:'', charIndex:0, errors:0,
     startTime:null, pollInterval:null, passageSet:'classic', passageIndex:0, finished:false };
